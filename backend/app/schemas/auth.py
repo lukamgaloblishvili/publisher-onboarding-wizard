@@ -13,3 +13,8 @@ class UserRead(BaseModel):
     username: str
     role: str
     publisher_id: int | None
+
+
+class UserUpdate(BaseModel):
+    username: str | None = None
+    password: str | None = None

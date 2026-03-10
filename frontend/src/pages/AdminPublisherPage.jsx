@@ -3,12 +3,17 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Card } from "../components/Cards";
 import { StatusPill } from "../components/StatusPill";
+import { CAMPAIGN_TYPE_OPTIONS } from "../constants";
 
 export function AdminPublisherPage() {
   const { publisherId } = useParams();
   const [publisher, setPublisher] = useState(null);
   const [publisherForm, setPublisherForm] = useState(null);
-  const [campaignForm, setCampaignForm] = useState({ name: "", status: "in_progress" });
+  const [campaignForm, setCampaignForm] = useState({
+    name: "",
+    status: "in_progress",
+    campaign_type: "api_real_time_leads_ping_post"
+  });
   const [userForm, setUserForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
 
@@ -71,13 +76,14 @@ export function AdminPublisherPage() {
             <button className="primary-button">Save publisher</button>
           </form>
         </Card>
-        <Card title="Create publisher login">
+        <Card title="Publisher logins">
           <form
             className="stack-form"
             onSubmit={async (event) => {
               event.preventDefault();
               await api.createPublisherUser(publisher.id, userForm);
               setUserForm({ username: "", password: "" });
+              await loadPublisher();
             }}
           >
             <input placeholder="Username" value={userForm.username} onChange={(event) => setUserForm((current) => ({ ...current, username: event.target.value }))} />
@@ -89,6 +95,33 @@ export function AdminPublisherPage() {
             />
             <button className="ghost-button">Create login</button>
           </form>
+          <div className="campaign-list">
+            {publisher.users.length ? (
+              publisher.users.map((user) => (
+                <form
+                  className="stack-form bordered-form"
+                  key={user.id}
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    const formData = new FormData(event.currentTarget);
+                    await api.updateUser(user.id, {
+                      username: formData.get("username"),
+                      password: formData.get("password") || undefined
+                    });
+                    await loadPublisher();
+                    event.currentTarget.reset();
+                  }}
+                >
+                  <strong>{user.username}</strong>
+                  <input name="username" defaultValue={user.username} />
+                  <input name="password" type="password" placeholder="New password" />
+                  <button className="ghost-button">Update login</button>
+                </form>
+              ))
+            ) : (
+              <div className="empty-state">No publisher logins yet.</div>
+            )}
+          </div>
         </Card>
         <Card title="Create campaign" className="wide-card">
           <form
@@ -96,7 +129,7 @@ export function AdminPublisherPage() {
             onSubmit={async (event) => {
               event.preventDefault();
               await api.createCampaign(publisher.id, campaignForm);
-              setCampaignForm({ name: "", status: "in_progress" });
+              setCampaignForm({ name: "", status: "in_progress", campaign_type: "api_real_time_leads_ping_post" });
               await loadPublisher();
             }}
           >
@@ -107,6 +140,13 @@ export function AdminPublisherPage() {
               <option value="waiting_on_publisher">Waiting on Publisher</option>
               <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
+            </select>
+            <select value={campaignForm.campaign_type} onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_type: event.target.value }))}>
+              {CAMPAIGN_TYPE_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
             <button className="primary-button">Add campaign</button>
           </form>

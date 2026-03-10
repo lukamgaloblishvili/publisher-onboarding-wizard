@@ -302,3 +302,21 @@ Return:
 Choose the simplest approach that results in a coherent, demonstrable MVP.
 Do not optimize for scale or enterprise complexity.
 Optimize for clarity, correctness, and speed to a working product.
+
+## Git workflow
+- Main branch: `main`
+- Feature branches are required for coding work
+- Never implement code changes directly on `main`
+- Commit messages do not need a strict convention, but must be descriptive
+- If fixing a specific issue or adding a feature, include a brief reference in the commit message
+- There are no pull request requirements by default; the user will guide when to push
+
+## Branch relevance check
+Before any code edit, run `git branch --show-current`.
+
+If the current branch is `main`, `master`, or clearly unrelated to the request:
+- stop and ask the user to create or switch branches first
+- suggest a branch name when needed
+- recommended format: `US-<number>-<slug>`
+
+Treat this as a hard constraint, not optional guidance.

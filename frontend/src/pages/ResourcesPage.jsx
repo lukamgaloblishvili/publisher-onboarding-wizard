@@ -26,7 +26,7 @@ export function ResourcesPage() {
         <h1>Publisher materials</h1>
         <p>Default PX content and publisher-specific guidance live here.</p>
       </section>
-      <Card title="Resources Library">
+      <Card title="Resources">
         <MarkdownContent content={resources.content_markdown} />
       </Card>
     </div>

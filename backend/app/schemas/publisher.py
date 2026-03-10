@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.auth import UserRead
 from app.schemas.common import ComplianceState, IntegrationState
 
 
@@ -12,6 +13,8 @@ class CampaignRead(BaseModel):
     publisher_id: int
     name: str
     status: str
+    campaign_type: str
+    checklist_items: list[dict]
     created_at: datetime
     updated_at: datetime
     integration: IntegrationState | None = None
@@ -42,6 +45,7 @@ class PublisherRead(BaseModel):
     resources_content_markdown: str | None
     created_at: datetime
     updated_at: datetime
+    users: list[UserRead] = []
     campaigns: list[CampaignRead] = []
 
 
@@ -53,11 +57,14 @@ class PublisherUserCreate(BaseModel):
 class CampaignCreate(BaseModel):
     name: str
     status: str = "in_progress"
+    campaign_type: str = "api_real_time_leads_ping_post"
 
 
 class CampaignUpdate(BaseModel):
     name: str | None = None
     status: str | None = None
+    campaign_type: str | None = None
+    checklist_items: list[dict] | None = None
 
 
 class IntegrationLinkRequest(BaseModel):

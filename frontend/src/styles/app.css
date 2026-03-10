@@ -61,6 +61,19 @@ select {
   color: var(--white);
 }
 
+.login-logo-wrap {
+  width: 88px;
+  height: 88px;
+  margin-bottom: 20px;
+}
+
+.brand-mark img,
+.login-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 .login-copy h1,
 .page-header h1 {
   margin: 12px 0;
@@ -160,8 +173,8 @@ textarea {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--green), var(--purple));
-  color: var(--white);
+  background: transparent;
+  color: var(--black);
 }
 
 .nav {
@@ -274,6 +287,12 @@ textarea {
   gap: 12px;
 }
 
+.bordered-form {
+  border: 1px solid rgba(35, 35, 35, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+}
+
 .campaign-row,
 .campaign-admin-row {
   align-items: center;
@@ -366,6 +385,55 @@ textarea {
 
 .markdown p {
   margin: 6px 0;
+}
+
+.markdown a {
+  color: var(--dark-green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 700;
+}
+
+.markdown a:hover {
+  color: var(--green);
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.progress-track {
+  width: 180px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(35, 35, 35, 0.08);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--purple));
+}
+
+.checklist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checklist-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.checklist-item input {
+  width: auto;
+  margin-top: 4px;
 }
 
 .markdown-list-item {

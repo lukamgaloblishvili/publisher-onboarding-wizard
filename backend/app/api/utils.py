@@ -1,6 +1,9 @@
+import json
+
 from sqlmodel import Session, select
 
-from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher
+from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher, User
+from app.schemas.auth import UserRead
 from app.schemas.common import ComplianceState, IntegrationState, MessageRead
 from app.schemas.publisher import CampaignRead, PublisherRead
 
@@ -35,8 +38,10 @@ def compliance_state(session: Session, campaign_id: int) -> ComplianceState | No
 
 
 def campaign_read(session: Session, campaign: Campaign) -> CampaignRead:
+    checklist_items = json.loads(campaign.checklist_json or "[]")
     return CampaignRead(
-        **campaign.model_dump(),
+        **campaign.model_dump(exclude={"checklist_json"}),
+        checklist_items=checklist_items,
         integration=integration_state(session, campaign.id),
         compliance=compliance_state(session, campaign.id),
     )
@@ -44,7 +49,9 @@ def campaign_read(session: Session, campaign: Campaign) -> CampaignRead:
 
 def publisher_read(session: Session, publisher: Publisher) -> PublisherRead:
     campaigns = session.exec(select(Campaign).where(Campaign.publisher_id == publisher.id).order_by(Campaign.created_at)).all()
+    users = session.exec(select(User).where(User.publisher_id == publisher.id).order_by(User.created_at)).all()
     return PublisherRead(
         **publisher.model_dump(),
+        users=[UserRead.model_validate(user) for user in users],
         campaigns=[campaign_read(session, campaign) for campaign in campaigns],
     )

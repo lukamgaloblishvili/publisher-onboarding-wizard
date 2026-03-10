@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 export function AppShell({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const logoPath = "/px-logo.svg";
 
   async function handleLogout() {
     await logout();
@@ -14,7 +15,16 @@ export function AppShell({ children }) {
     <div className="app-shell">
       <aside className="sidebar">
         <Link className="brand" to={user?.role === "admin" ? "/admin" : "/"}>
-          <span className="brand-mark">PX</span>
+          <span className="brand-mark">
+            <img
+              src={logoPath}
+              alt="PX"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+                event.currentTarget.parentElement.textContent = "PX";
+              }}
+            />
+          </span>
           <div>
             <strong>Onboarding Wizard</strong>
             <span>Publisher coordination</span>

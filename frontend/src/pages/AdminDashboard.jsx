@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { Card } from "../components/Cards";
+import { DEFAULT_RESOURCES_MARKDOWN } from "../constants";
 
 const emptyPublisher = {
   name: "",
   slug: "",
   slack_channel_embed_url: "",
-  resources_content_markdown: "## Custom Content\n\n- Add publisher-specific onboarding notes here."
+  resources_content_markdown: DEFAULT_RESOURCES_MARKDOWN
 };
 
 export function AdminDashboard() {

@@ -41,6 +41,7 @@ export const api = {
     request(`/admin/publishers/${publisherId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   createPublisherUser: (publisherId, payload) =>
     request(`/admin/publishers/${publisherId}/users`, { method: "POST", body: JSON.stringify(payload) }),
+  updateUser: (userId, payload) => request(`/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   createCampaign: (publisherId, payload) =>
     request(`/admin/publishers/${publisherId}/campaigns`, { method: "POST", body: JSON.stringify(payload) }),
   updateCampaign: (campaignId, payload) =>

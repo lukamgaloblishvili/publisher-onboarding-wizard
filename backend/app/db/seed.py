@@ -1,30 +1,29 @@
 from sqlmodel import Session, select
 
+from app.core.defaults import DEFAULT_RESOURCES, build_checklist
 from app.core.security import hash_password
 from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher, User
 
 
-DEFAULT_RESOURCES = """## Default Resources
-
-- [PX Integration Guide](https://example.com/integration-guide)
-- [Compliance Checklist](https://example.com/compliance-checklist)
-- Reach out in Slack for urgent blockers.
-
-## Publisher Notes
-
-Welcome to the PX onboarding workspace. Use this portal to track Integration and Compliance workstreams.
-"""
-
-
 def seed_data(session: Session) -> None:
+    default_publisher_resources = DEFAULT_RESOURCES
     publisher = session.exec(select(Publisher).where(Publisher.slug == "acme-publishing")).first()
     if not publisher:
         publisher = Publisher(
             name="Acme Publishing",
             slug="acme-publishing",
             slack_channel_embed_url="https://slack.com/app_redirect?channel=publisher-onboarding",
-            resources_content_markdown=DEFAULT_RESOURCES + "\n\n## Custom Content\n\n- Primary business contact: ops@acme.test",
+            resources_content_markdown=default_publisher_resources,
         )
+        session.add(publisher)
+        session.commit()
+        session.refresh(publisher)
+    elif (
+        not publisher.resources_content_markdown
+        or "https://api.px.com/" not in publisher.resources_content_markdown
+        or "## Publisher Notes" in publisher.resources_content_markdown
+    ):
+        publisher.resources_content_markdown = default_publisher_resources
         session.add(publisher)
         session.commit()
         session.refresh(publisher)
@@ -33,18 +32,37 @@ def seed_data(session: Session) -> None:
         select(Campaign).where(Campaign.publisher_id == publisher.id, Campaign.name == "Spring Launch")
     ).first()
     if not spring_launch:
-        spring_launch = Campaign(publisher_id=publisher.id, name="Spring Launch", status="in_progress")
+        spring_launch = Campaign(
+            publisher_id=publisher.id,
+            name="Spring Launch",
+            status="in_progress",
+            campaign_type="api_real_time_leads_ping_post",
+            checklist_json=build_checklist("api_real_time_leads_ping_post"),
+        )
         session.add(spring_launch)
 
     international = session.exec(
         select(Campaign).where(Campaign.publisher_id == publisher.id, Campaign.name == "International Expansion")
     ).first()
     if not international:
-        international = Campaign(publisher_id=publisher.id, name="International Expansion", status="waiting_on_publisher")
+        international = Campaign(
+            publisher_id=publisher.id,
+            name="International Expansion",
+            status="waiting_on_publisher",
+            campaign_type="branded_tracking_link",
+            checklist_json=build_checklist("branded_tracking_link"),
+        )
         session.add(international)
     session.commit()
     session.refresh(spring_launch)
     session.refresh(international)
+    if not spring_launch.checklist_json:
+        spring_launch.checklist_json = build_checklist(spring_launch.campaign_type)
+        session.add(spring_launch)
+    if not international.checklist_json:
+        international.checklist_json = build_checklist(international.campaign_type)
+        session.add(international)
+    session.commit()
 
     integration = session.exec(select(CampaignIntegration).where(CampaignIntegration.campaign_id == spring_launch.id)).first()
     if not integration:

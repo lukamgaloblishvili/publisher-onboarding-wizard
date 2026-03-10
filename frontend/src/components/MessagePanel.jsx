@@ -55,6 +55,13 @@ export function MessagePanel({
     }
   }
 
+  function messageAuthorLabel(message) {
+    if (isAdmin) {
+      return message.source;
+    }
+    return message.direction === "outbound" ? "You" : "PX Team";
+  }
+
   return (
     <Card
       title={title}
@@ -70,10 +77,14 @@ export function MessagePanel({
       }
     >
       <div className="entity-meta">
-        <a href={entity.external_ticket_url} target="_blank" rel="noreferrer">
-          {entity.external_ticket_key || entity.external_item_id || "Open external item"}
-        </a>
-        <span>External status: {entity.external_status || "Unknown"}</span>
+        {isAdmin ? (
+          <a href={entity.external_ticket_url} target="_blank" rel="noreferrer">
+            {entity.external_ticket_key || entity.external_item_id || "Open external item"}
+          </a>
+        ) : (
+          <span>Linked work item</span>
+        )}
+        <span>{isAdmin ? `External status: ${entity.external_status || "Unknown"}` : `Status: ${entity.portal_status || "Unknown"}`}</span>
       </div>
       <div className="description-box">{entity.frozen_description || "No description synced yet."}</div>
       <div className="timeline">
@@ -81,7 +92,7 @@ export function MessagePanel({
           entity.messages.map((message) => (
             <article key={message.id} className={`message ${message.direction}`}>
               <div className="message-meta">
-                <span>{message.source}</span>
+                <span>{messageAuthorLabel(message)}</span>
                 <span>{new Date(message.created_at).toLocaleString()}</span>
               </div>
               <p>{message.body}</p>

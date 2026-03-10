@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Card } from "../components/Cards";
+import { ChecklistCard } from "../components/ChecklistCard";
 import { MessagePanel } from "../components/MessagePanel";
 import { StatusPill } from "../components/StatusPill";
+import { CAMPAIGN_TYPE_OPTIONS } from "../constants";
 import { useAuth } from "../hooks/useAuth";
 
 export function CampaignPage() {
   const { campaignId } = useParams();
   const { user } = useAuth();
   const [campaign, setCampaign] = useState(null);
-  const [campaignForm, setCampaignForm] = useState({ name: "", status: "in_progress" });
+  const [campaignForm, setCampaignForm] = useState({
+    name: "",
+    status: "in_progress",
+    campaign_type: "api_real_time_leads_ping_post"
+  });
   const [integrationForm, setIntegrationForm] = useState({ external_ticket_key: "", external_ticket_url: "" });
   const [complianceForm, setComplianceForm] = useState({ external_item_id: "", external_ticket_url: "" });
   const [error, setError] = useState("");
@@ -22,7 +28,7 @@ export function CampaignPage() {
       setError("");
       const data = await api.getCampaign(campaignId);
       setCampaign(data);
-      setCampaignForm({ name: data.name, status: data.status });
+      setCampaignForm({ name: data.name, status: data.status, campaign_type: data.campaign_type });
       setIntegrationForm({
         external_ticket_key: data.integration?.external_ticket_key || "",
         external_ticket_url: data.integration?.external_ticket_url || ""
@@ -50,6 +56,14 @@ export function CampaignPage() {
     return <div className="error-banner">{error}</div>;
   }
 
+  async function toggleChecklistItem(index) {
+    const checklistItems = campaign.checklist_items.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, completed: !item.completed } : item
+    );
+    await api.updateCampaign(campaign.id, { checklist_items: checklistItems });
+    await loadCampaign();
+  }
+
   return (
     <div className="page-grid">
       <section className="page-header">
@@ -60,9 +74,7 @@ export function CampaignPage() {
           <span>Campaign ID: {campaign.id}</span>
         </div>
       </section>
-      <Card title="Summary">
-        <p>This view combines the external Integration and Compliance entities into a single campaign workspace.</p>
-      </Card>
+      <ChecklistCard campaign={campaign} editable={user?.role === "admin"} onToggle={toggleChecklistItem} />
       {user?.role === "admin" ? (
         <div className="panel-grid">
           <Card title="Campaign settings">
@@ -82,6 +94,13 @@ export function CampaignPage() {
                 <option value="blocked">Blocked</option>
                 <option value="completed">Completed</option>
               </select>
+              <select value={campaignForm.campaign_type} onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_type: event.target.value }))}>
+                {CAMPAIGN_TYPE_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
               <button className="primary-button">Save campaign</button>
             </form>
           </Card>
@@ -95,16 +114,16 @@ export function CampaignPage() {
               }}
             >
               <input
-                placeholder="Jira ticket key"
+                placeholder="Integration ticket key"
                 value={integrationForm.external_ticket_key}
                 onChange={(event) => setIntegrationForm((current) => ({ ...current, external_ticket_key: event.target.value }))}
               />
               <input
-                placeholder="Jira URL"
+                placeholder="Integration ticket URL"
                 value={integrationForm.external_ticket_url}
                 onChange={(event) => setIntegrationForm((current) => ({ ...current, external_ticket_url: event.target.value }))}
               />
-              <button className="ghost-button">Save Jira link</button>
+              <button className="ghost-button">Save integration link</button>
             </form>
             <form
               className="stack-form"
@@ -115,16 +134,16 @@ export function CampaignPage() {
               }}
             >
               <input
-                placeholder="Monday item ID"
+                placeholder="Compliance item ID"
                 value={complianceForm.external_item_id}
                 onChange={(event) => setComplianceForm((current) => ({ ...current, external_item_id: event.target.value }))}
               />
               <input
-                placeholder="Monday URL"
+                placeholder="Compliance item URL"
                 value={complianceForm.external_ticket_url}
                 onChange={(event) => setComplianceForm((current) => ({ ...current, external_ticket_url: event.target.value }))}
               />
-              <button className="ghost-button">Save Monday link</button>
+              <button className="ghost-button">Save compliance link</button>
             </form>
           </Card>
         </div>

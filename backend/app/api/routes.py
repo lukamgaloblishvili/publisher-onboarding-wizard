@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,10 +9,11 @@ from sqlmodel import Session, select
 from app.api.deps import get_current_user, require_admin
 from app.api.utils import campaign_read, compliance_state, integration_state, message_reads, publisher_read
 from app.core.config import settings
+from app.core.defaults import DEFAULT_RESOURCES, build_checklist
 from app.core.security import create_session_token, hash_password, verify_password
 from app.db.session import get_session
 from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher, User
-from app.schemas.auth import LoginRequest, UserRead
+from app.schemas.auth import LoginRequest, UserRead, UserUpdate
 from app.schemas.common import ComplianceState, IntegrationState, MessageRead
 from app.schemas.publisher import (
     CampaignCreate,
@@ -89,7 +91,10 @@ def admin_publishers(session: Session = Depends(get_session), _: User = Depends(
 
 @router.post("/admin/publishers", response_model=PublisherRead)
 def create_publisher(payload: PublisherCreate, session: Session = Depends(get_session), _: User = Depends(require_admin)):
-    publisher = Publisher(**payload.model_dump(), updated_at=datetime.now(timezone.utc))
+    data = payload.model_dump()
+    if not data.get("resources_content_markdown"):
+        data["resources_content_markdown"] = DEFAULT_RESOURCES
+    publisher = Publisher(**data, updated_at=datetime.now(timezone.utc))
     session.add(publisher)
     session.commit()
     session.refresh(publisher)
@@ -129,11 +134,31 @@ def create_publisher_user(publisher_id: int, payload: PublisherUserCreate, sessi
     return UserRead.model_validate(user)
 
 
+@router.patch("/admin/users/{user_id}", response_model=UserRead)
+def update_user(user_id: int, payload: UserUpdate, session: Session = Depends(get_session), _: User = Depends(require_admin)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if payload.username:
+        user.username = payload.username
+    if payload.password:
+        user.password_hash = hash_password(payload.password)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return UserRead.model_validate(user)
+
+
 @router.post("/admin/publishers/{publisher_id}/campaigns", response_model=CampaignRead)
 def create_campaign(publisher_id: int, payload: CampaignCreate, session: Session = Depends(get_session), _: User = Depends(require_admin)):
     if not session.get(Publisher, publisher_id):
         raise HTTPException(status_code=404, detail="Publisher not found")
-    campaign = Campaign(publisher_id=publisher_id, **payload.model_dump())
+    data = payload.model_dump()
+    campaign = Campaign(
+        publisher_id=publisher_id,
+        **data,
+        checklist_json=build_checklist(data["campaign_type"]),
+    )
     session.add(campaign)
     session.commit()
     session.refresh(campaign)
@@ -145,8 +170,14 @@ def update_campaign(campaign_id: int, payload: CampaignUpdate, session: Session 
     campaign = session.get(Campaign, campaign_id)
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    for key, value in payload.model_dump(exclude_none=True).items():
+    update_data = payload.model_dump(exclude_none=True)
+    checklist_items = update_data.pop("checklist_items", None)
+    for key, value in update_data.items():
         setattr(campaign, key, value)
+    if checklist_items is not None:
+        campaign.checklist_json = json.dumps(checklist_items)
+    elif "campaign_type" in update_data:
+        campaign.checklist_json = build_checklist(campaign.campaign_type)
     campaign.updated_at = datetime.now(timezone.utc)
     session.add(campaign)
     session.commit()

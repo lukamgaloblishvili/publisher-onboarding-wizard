@@ -31,6 +31,8 @@ class Campaign(SQLModel, table=True):
     publisher_id: int = Field(foreign_key="publisher.id", index=True)
     name: str
     status: str = Field(default="in_progress")
+    campaign_type: str = Field(default="api_real_time_leads_ping_post")
+    checklist_json: str | None = None
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

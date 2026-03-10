@@ -27,6 +27,16 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-panel">
         <div className="login-copy">
+          <div className="login-logo-wrap">
+            <img
+              className="login-logo"
+              src="/px-logo.svg"
+              alt="PX"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
           <span className="eyebrow">PX Publisher Operations</span>
           <h1>Onboarding Wizard</h1>
           <p>Track campaigns, integration conversations, compliance uploads, and shared Slack coordination in one place.</p>
