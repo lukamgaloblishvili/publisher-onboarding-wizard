@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../api/client";
 import { Card } from "./Cards";
 import { StatusPill } from "./StatusPill";
@@ -16,6 +16,14 @@ export function MessagePanel({
   const [note, setNote] = useState("File uploaded from portal");
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const timelineRef = useRef(null);
+
+  useEffect(() => {
+    if (!timelineRef.current) {
+      return;
+    }
+    timelineRef.current.scrollTop = timelineRef.current.scrollHeight;
+  }, [entity?.messages]);
 
   if (!entity) {
     return (
@@ -62,6 +70,13 @@ export function MessagePanel({
     return message.direction === "outbound" ? "You" : "PX Team";
   }
 
+  function messageMarkup(message) {
+    if (message.formatted_body) {
+      return <div className="message-body" dangerouslySetInnerHTML={{ __html: message.formatted_body }} />;
+    }
+    return <p>{message.body}</p>;
+  }
+
   return (
     <Card
       title={title}
@@ -87,7 +102,7 @@ export function MessagePanel({
         <span>{isAdmin ? `External status: ${entity.external_status || "Unknown"}` : `Status: ${entity.portal_status || "Unknown"}`}</span>
       </div>
       <div className="description-box">{entity.frozen_description || "No description synced yet."}</div>
-      <div className="timeline">
+      <div className="timeline" ref={timelineRef}>
         {entity.messages?.length ? (
           entity.messages.map((message) => (
             <article key={message.id} className={`message ${message.direction}`}>
@@ -95,7 +110,7 @@ export function MessagePanel({
                 <span>{messageAuthorLabel(message)}</span>
                 <span>{new Date(message.created_at).toLocaleString()}</span>
               </div>
-              <p>{message.body}</p>
+              {messageMarkup(message)}
               {message.attachment_url ? (
                 <a href={`${API_BASE}${message.attachment_url}`} target="_blank" rel="noreferrer">
                   {message.attachment_name || "Download attachment"}

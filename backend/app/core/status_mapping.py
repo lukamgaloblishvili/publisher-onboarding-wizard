@@ -4,15 +4,22 @@ PORTAL_STATUS_VALUES = [
     "waiting_on_publisher",
     "blocked",
     "completed",
+    "input_required",
+    "closed",
+    "final_approval_required",
 ]
 
 JIRA_STATUS_MAP = {
-    "to do": "not_started",
-    "selected for development": "not_started",
-    "in progress": "in_progress",
-    "waiting on publisher": "waiting_on_publisher",
-    "blocked": "blocked",
+    "open": "in_progress",
+    "response received": "in_progress",
+    "pending client input": "input_required",
+    "pending manager input": "input_required",
     "done": "completed",
+    "completed - monitoring": "completed",
+    "abandoned": "closed",
+    "closed": "closed",
+    "no compliance approval yet": "final_approval_required",
+    "no finance approval yet": "final_approval_required",
 }
 
 MONDAY_STATUS_MAP = {

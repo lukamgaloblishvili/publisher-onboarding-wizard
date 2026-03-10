@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     jira_base_url: str | None = None
     jira_email: str | None = None
     jira_api_token: str | None = None
+    integration_sync_interval_seconds: int = 300
+    integration_auto_sync_enabled: bool = True
     monday_api_token: str | None = None
     max_upload_bytes: int = 5 * 1024 * 1024
 

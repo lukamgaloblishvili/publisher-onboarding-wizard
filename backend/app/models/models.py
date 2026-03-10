@@ -67,6 +67,7 @@ class Message(SQLModel, table=True):
     entity_id: int = Field(index=True)
     direction: str
     body: str
+    formatted_body: str | None = None
     attachment_url: str | None = None
     attachment_name: str | None = None
     source: str

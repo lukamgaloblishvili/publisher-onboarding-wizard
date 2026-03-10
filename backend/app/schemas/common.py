@@ -11,6 +11,7 @@ class MessageRead(BaseModel):
     entity_id: int
     direction: str
     body: str
+    formatted_body: str | None
     attachment_url: str | None
     attachment_name: str | None
     source: str
