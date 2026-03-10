@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+backend/px_wizard.db
+backend/app/uploads/*
+!backend/app/uploads/.gitkeep
+frontend/.env
+backend/.env
