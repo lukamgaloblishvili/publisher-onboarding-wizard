@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from app.api.deps import get_current_user, require_admin
 from app.api.utils import campaign_read, compliance_state, integration_state, message_reads, publisher_read
@@ -29,6 +29,7 @@ from app.schemas.publisher import (
 )
 from app.services.jira import JiraAdapter
 from app.services.integration_sync import plain_text_to_html, reset_integration_snapshot, sync_integration_record
+from app.services.compliance_sync import sync_compliance_record
 from app.services.monday import MondayAdapter
 from app.services.storage import StorageService
 
@@ -71,6 +72,31 @@ def ensure_unique_integration_ticket(session: Session, ticket_key: str, integrat
                 "Unlink or relink the other campaign first."
             ),
         )
+
+
+def ensure_unique_compliance_item(session: Session, item_id: str, compliance_id: int | None = None) -> None:
+    query = select(CampaignCompliance).where(CampaignCompliance.external_item_id == item_id)
+    if compliance_id is not None:
+        query = query.where(CampaignCompliance.id != compliance_id)
+    duplicate = session.exec(query).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Monday item {item_id} is already linked to campaign {duplicate.campaign_id}. "
+                "Unlink or relink the other campaign first."
+            ),
+        )
+
+
+def reset_compliance_snapshot(session: Session, compliance: CampaignCompliance) -> None:
+    compliance.portal_status = "not_started"
+    compliance.external_status = None
+    compliance.frozen_description = None
+    compliance.frozen_description_html = None
+    compliance.last_synced_at = None
+    session.add(compliance)
+    session.exec(delete(Message).where(Message.entity_type == "compliance", Message.entity_id == compliance.id))
 
 
 @router.post("/auth/login", response_model=UserRead)
@@ -228,8 +254,15 @@ def link_compliance(campaign_id: int, payload: ComplianceLinkRequest, session: S
     compliance = session.exec(select(CampaignCompliance).where(CampaignCompliance.campaign_id == campaign_id)).first()
     if not compliance:
         compliance = CampaignCompliance(campaign_id=campaign_id)
-    compliance.external_item_id = payload.external_item_id
-    compliance.external_ticket_url = payload.external_ticket_url
+    try:
+        item_id, item_url = monday.parse_item_reference(payload.external_item_id, payload.external_ticket_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    ensure_unique_compliance_item(session, item_id, compliance.id)
+    if compliance.id is not None:
+        reset_compliance_snapshot(session, compliance)
+    compliance.external_item_id = item_id
+    compliance.external_ticket_url = item_url
     session.add(compliance)
     session.commit()
     session.refresh(compliance)
@@ -251,34 +284,8 @@ def sync_compliance(compliance_id: int, session: Session = Depends(get_session),
     compliance = session.get(CampaignCompliance, compliance_id)
     if not compliance or not compliance.external_item_id:
         raise HTTPException(status_code=404, detail="Compliance not found")
-    item = monday.fetch_item(compliance.external_item_id, compliance.external_ticket_url)
-    updates = monday.fetch_updates(compliance.external_item_id)
-    compliance.external_ticket_url = item.url
-    compliance.external_status = item.status
-    compliance.portal_status = monday.map_status(item.status)
-    compliance.last_synced_at = datetime.now(timezone.utc)
-    if not compliance.frozen_description:
-        compliance.frozen_description = item.description
-    session.add(compliance)
-    existing_ids = {
-        message.external_message_id
-        for message in session.exec(select(Message).where(Message.entity_type == "compliance", Message.entity_id == compliance_id)).all()
-    }
-    for update in updates:
-        if update.id in existing_ids:
-            continue
-        session.add(
-            Message(
-                entity_type="compliance",
-                entity_id=compliance_id,
-                direction="inbound",
-                body=update.body,
-                source="monday",
-                external_message_id=update.id,
-                created_at=update.created_at,
-            )
-        )
-    session.commit()
+    ensure_unique_compliance_item(session, compliance.external_item_id, compliance.id)
+    sync_compliance_record(session, compliance, monday)
     return compliance_state(session, compliance.campaign_id)
 
 
@@ -331,6 +338,8 @@ def get_compliance_messages(compliance_id: int, session: Session = Depends(get_s
 @router.post("/compliance/{compliance_id}/messages", response_model=MessageRead)
 def post_compliance_message(compliance_id: int, payload: MessageCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     compliance, _campaign = ensure_entity_access(session, "compliance", compliance_id, user)
+    if compliance.external_item_id:
+        ensure_unique_compliance_item(session, compliance.external_item_id, compliance.id)
     external_id = monday.push_update(compliance.external_item_id or str(compliance_id), payload.body)
     message = Message(
         entity_type="compliance",
@@ -362,8 +371,10 @@ def upload_compliance_file(
     if extension not in allowed:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     compliance, _campaign = ensure_entity_access(session, "compliance", compliance_id, user)
+    if compliance.external_item_id:
+        ensure_unique_compliance_item(session, compliance.external_item_id, compliance.id)
     attachment_url, attachment_name = storage.save_upload(file)
-    monday.upload_file(compliance.external_item_id or str(compliance_id), attachment_name)
+    monday.upload_file(compliance.external_item_id or str(compliance_id), str(Path(settings.upload_dir) / Path(attachment_url).name), note)
     message = Message(
         entity_type="compliance",
         entity_id=compliance_id,

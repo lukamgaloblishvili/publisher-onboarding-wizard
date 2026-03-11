@@ -13,7 +13,6 @@ export function MessagePanel({
   isAdmin = false
 }) {
   const [body, setBody] = useState("");
-  const [note, setNote] = useState("File uploaded from portal");
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const timelineRef = useRef(null);
@@ -35,29 +34,20 @@ export function MessagePanel({
 
   async function handleSend(event) {
     event.preventDefault();
-    if (!body.trim()) {
+    const trimmedBody = body.trim();
+    if (!trimmedBody && !file) {
       return;
     }
     setBusy(true);
     try {
-      await onSend(body.trim());
+      if (uploadEnabled && file && onUpload) {
+        await onUpload(file, trimmedBody || "File uploaded from portal");
+        setFile(null);
+        event.target.reset();
+      } else {
+        await onSend(trimmedBody);
+      }
       setBody("");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleUpload(event) {
-    event.preventDefault();
-    if (!file || !onUpload) {
-      return;
-    }
-    setBusy(true);
-    try {
-      await onUpload(file, note);
-      setFile(null);
-      setNote("File uploaded from portal");
-      event.target.reset();
     } finally {
       setBusy(false);
     }
@@ -75,6 +65,16 @@ export function MessagePanel({
       return <div className="message-body" dangerouslySetInnerHTML={{ __html: message.formatted_body }} />;
     }
     return <p>{message.body}</p>;
+  }
+
+  function attachmentHref(url) {
+    if (!url) {
+      return null;
+    }
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+    return `${API_BASE}${url}`;
   }
 
   function descriptionMarkup() {
@@ -119,7 +119,7 @@ export function MessagePanel({
               </div>
               {messageMarkup(message)}
               {message.attachment_url ? (
-                <a href={`${API_BASE}${message.attachment_url}`} target="_blank" rel="noreferrer">
+                <a href={attachmentHref(message.attachment_url)} target="_blank" rel="noreferrer">
                   {message.attachment_name || "Download attachment"}
                 </a>
               ) : null}
@@ -134,21 +134,21 @@ export function MessagePanel({
           rows="3"
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Write a message..."
+          placeholder={uploadEnabled ? "Write a message or attach a file..." : "Write a message..."}
         />
-        <button className="primary-button" disabled={busy}>
-          Send message
-        </button>
-      </form>
-      {uploadEnabled ? (
-        <form className="upload-form" onSubmit={handleUpload}>
-          <input type="text" value={note} onChange={(event) => setNote(event.target.value)} />
+        {uploadEnabled ? (
           <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} />
-          <button className="ghost-button" disabled={busy || !file}>
-            Upload file
-          </button>
-        </form>
-      ) : null}
+        ) : null}
+        <button className="primary-button" disabled={busy || (!body.trim() && !file)}>
+          {file ? "Send with file" : "Send message"}
+        </button>
+        {uploadEnabled && file ? (
+          <span className="inline-upload-label">
+            {file.name}
+            {!body.trim() ? ' - empty message will use "File uploaded from portal".' : ""}
+          </span>
+        ) : null}
+      </form>
     </Card>
   );
 }

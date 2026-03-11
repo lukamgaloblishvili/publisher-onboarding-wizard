@@ -340,6 +340,16 @@ textarea {
   color: #8f32be;
 }
 
+.status-rejected {
+  background: rgba(198, 40, 40, 0.12);
+  color: #8c1d1d;
+}
+
+.status-on_hold {
+  background: rgba(255, 196, 61, 0.18);
+  color: #8b6200;
+}
+
 .status-closed {
   background: rgba(35, 35, 35, 0.1);
   color: rgba(35, 35, 35, 0.8);
@@ -425,6 +435,11 @@ textarea {
 }
 
 .message-meta {
+  font-size: 0.82rem;
+}
+
+.inline-upload-label {
+  color: rgba(35, 35, 35, 0.66);
   font-size: 0.82rem;
 }
 
