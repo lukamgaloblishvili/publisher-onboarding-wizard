@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.db.migrations import run_startup_migrations
 from app.db.seed import seed_data
 from app.db.session import create_db_and_tables, engine
+from app.services.compliance_sync_worker import start_compliance_sync_worker, stop_compliance_sync_worker
 from app.services.integration_sync_worker import start_integration_sync_worker, stop_integration_sync_worker
 
 
@@ -28,11 +29,13 @@ def on_startup() -> None:
     with Session(engine) as session:
         seed_data(session)
     start_integration_sync_worker()
+    start_compliance_sync_worker()
 
 
 @app.on_event("shutdown")
 def on_shutdown() -> None:
     stop_integration_sync_worker()
+    stop_compliance_sync_worker()
 
 
 @app.get("/health")

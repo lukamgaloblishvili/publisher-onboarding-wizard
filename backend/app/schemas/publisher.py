@@ -73,7 +73,7 @@ class IntegrationLinkRequest(BaseModel):
 
 
 class ComplianceLinkRequest(BaseModel):
-    external_item_id: str
+    external_item_id: str | None = None
     external_ticket_url: str | None = None
 
 

@@ -5,6 +5,8 @@ PORTAL_STATUS_VALUES = [
     "blocked",
     "completed",
     "input_required",
+    "rejected",
+    "on_hold",
     "closed",
     "final_approval_required",
 ]
@@ -28,6 +30,10 @@ MONDAY_STATUS_MAP = {
     "done": "completed",
     "waiting for client": "waiting_on_publisher",
     "not started": "not_started",
+    "to do": "not_started",
+    "publisher updates requested": "input_required",
+    "rejected": "rejected",
+    "on hold": "on_hold",
 }
 
 

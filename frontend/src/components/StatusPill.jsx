@@ -5,6 +5,8 @@ const LABELS = {
   blocked: "Blocked",
   completed: "Completed",
   input_required: "Input Required",
+  rejected: "Rejected",
+  on_hold: "On Hold",
   closed: "Closed",
   final_approval_required: "Final Approval Required"
 };
