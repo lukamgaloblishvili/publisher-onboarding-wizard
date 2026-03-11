@@ -14,6 +14,7 @@ class JiraTicket:
     url: str | None
     status: str
     description: str
+    description_html: str | None
 
 
 @dataclass
@@ -26,6 +27,8 @@ class JiraComment:
 
 
 class JiraAdapter:
+    portal_comment_prefix = "[Portal]"
+
     def _client(self) -> httpx.Client:
         auth = (settings.jira_email or "", settings.jira_api_token or "")
         return httpx.Client(base_url=settings.jira_base_url, auth=auth, timeout=20.0)
@@ -113,7 +116,14 @@ class JiraAdapter:
                 key=ticket_key,
                 url=ticket_url or f"https://jira.example.com/browse/{ticket_key}",
                 status="In Progress",
-                description="Publisher integration checklist and implementation notes.",
+                description=(
+                    f"{ticket_key} integration checklist and implementation notes.\n\n"
+                    "Confirm endpoint fields and expected test payloads."
+                ),
+                description_html=(
+                    f"<p><strong>{escape(ticket_key)}</strong> integration checklist and implementation notes.</p>"
+                    "<p>Confirm endpoint fields and expected test payloads.</p>"
+                ),
             )
 
         with self._client() as client:
@@ -122,11 +132,13 @@ class JiraAdapter:
             payload = response.json()
         fields = payload["fields"]
         description = self._extract_text(fields.get("description"))
+        description_html = self._adf_to_html(fields.get("description"))
         return JiraTicket(
             key=ticket_key,
             url=ticket_url or f"{settings.jira_base_url}/browse/{ticket_key}",
             status=fields["status"]["name"],
             description=description,
+            description_html=description_html,
         )
 
     def fetch_public_comments(self, ticket_key: str) -> list[JiraComment]:
@@ -135,14 +147,17 @@ class JiraAdapter:
             return [
                 JiraComment(
                     id=f"{ticket_key}-1",
-                    body="PX has created the initial integration shell.",
-                    body_html="<p>PX has created the initial integration shell.</p>",
+                    body=f"PX has created the initial integration shell for {ticket_key}.",
+                    body_html=f"<p>PX has created the initial integration shell for <strong>{escape(ticket_key)}</strong>.</p>",
                     created_at=now,
                 ),
                 JiraComment(
                     id=f"{ticket_key}-2",
-                    body="Please confirm the endpoint whitelist from your engineering team.",
-                    body_html="<p>Please confirm the endpoint whitelist from your engineering team.</p>",
+                    body=f"Please confirm the endpoint whitelist from your engineering team for {ticket_key}.",
+                    body_html=(
+                        f"<p>Please confirm the endpoint whitelist from your engineering team for "
+                        f"<strong>{escape(ticket_key)}</strong>.</p>"
+                    ),
                     created_at=now,
                 ),
             ]
@@ -171,10 +186,11 @@ class JiraAdapter:
         return comments
 
     def push_comment(self, ticket_key: str, body: str) -> str:
+        jira_body = f"{self.portal_comment_prefix} {body}"
         if settings.use_mock_integrations:
             return f"{ticket_key}-portal"
 
-        payload = {"body": body, "public": True}
+        payload = {"body": jira_body, "public": True}
         with self._client() as client:
             response = client.post(f"/rest/servicedeskapi/request/{ticket_key}/comment", json=payload)
             if response.status_code == 404:
@@ -182,7 +198,7 @@ class JiraAdapter:
                     "body": {
                         "type": "doc",
                         "version": 1,
-                        "content": [{"type": "paragraph", "content": [{"type": "text", "text": body}]}],
+                        "content": [{"type": "paragraph", "content": [{"type": "text", "text": jira_body}]}],
                     }
                 }
                 response = client.post(f"/rest/api/3/issue/{ticket_key}/comment", json=fallback)

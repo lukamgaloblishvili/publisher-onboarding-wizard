@@ -46,6 +46,7 @@ class CampaignIntegration(SQLModel, table=True):
     portal_status: str = Field(default="not_started")
     external_status: str | None = None
     frozen_description: str | None = None
+    frozen_description_html: str | None = None
     last_synced_at: datetime | None = None
 
 
@@ -58,6 +59,7 @@ class CampaignCompliance(SQLModel, table=True):
     portal_status: str = Field(default="not_started")
     external_status: str | None = None
     frozen_description: str | None = None
+    frozen_description_html: str | None = None
     last_synced_at: datetime | None = None
 
 

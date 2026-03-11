@@ -77,6 +77,13 @@ export function MessagePanel({
     return <p>{message.body}</p>;
   }
 
+  function descriptionMarkup() {
+    if (entity.frozen_description_html) {
+      return <div className="message-body" dangerouslySetInnerHTML={{ __html: entity.frozen_description_html }} />;
+    }
+    return <p>{entity.frozen_description || "No description synced yet."}</p>;
+  }
+
   return (
     <Card
       title={title}
@@ -101,7 +108,7 @@ export function MessagePanel({
         )}
         <span>{isAdmin ? `External status: ${entity.external_status || "Unknown"}` : `Status: ${entity.portal_status || "Unknown"}`}</span>
       </div>
-      <div className="description-box">{entity.frozen_description || "No description synced yet."}</div>
+      <div className="description-box">{descriptionMarkup()}</div>
       <div className="timeline" ref={timelineRef}>
         {entity.messages?.length ? (
           entity.messages.map((message) => (

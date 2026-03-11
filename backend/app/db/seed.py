@@ -73,6 +73,9 @@ def seed_data(session: Session) -> None:
             portal_status="in_progress",
             external_status="In Progress",
             frozen_description="Confirm S2S tracking endpoint configuration and test event delivery.",
+            frozen_description_html=(
+                "<p>Confirm <strong>S2S tracking endpoint</strong> configuration and test event delivery.</p>"
+            ),
         )
         session.add(integration)
 
@@ -85,6 +88,9 @@ def seed_data(session: Session) -> None:
             portal_status="waiting_on_publisher",
             external_status="Waiting for client",
             frozen_description="Collect compliance documents, business registration, and payment paperwork.",
+            frozen_description_html=(
+                "<p>Collect compliance documents, business registration, and payment paperwork.</p>"
+            ),
         )
         session.add(compliance)
     session.commit()

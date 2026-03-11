@@ -21,3 +21,15 @@ def run_startup_migrations() -> None:
         }
         if "formatted_body" not in message_columns:
             connection.execute(text("ALTER TABLE message ADD COLUMN formatted_body TEXT"))
+        integration_columns = {
+            row[1]
+            for row in connection.execute(text("PRAGMA table_info('campaignintegration')")).fetchall()
+        }
+        if "frozen_description_html" not in integration_columns:
+            connection.execute(text("ALTER TABLE campaignintegration ADD COLUMN frozen_description_html TEXT"))
+        compliance_columns = {
+            row[1]
+            for row in connection.execute(text("PRAGMA table_info('campaigncompliance')")).fetchall()
+        }
+        if "frozen_description_html" not in compliance_columns:
+            connection.execute(text("ALTER TABLE campaigncompliance ADD COLUMN frozen_description_html TEXT"))

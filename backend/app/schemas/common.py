@@ -30,6 +30,7 @@ class IntegrationState(BaseModel):
     portal_status: str
     external_status: str | None
     frozen_description: str | None
+    frozen_description_html: str | None
     last_synced_at: datetime | None
     messages: list[MessageRead] = []
 
@@ -44,5 +45,6 @@ class ComplianceState(BaseModel):
     portal_status: str
     external_status: str | None
     frozen_description: str | None
+    frozen_description_html: str | None
     last_synced_at: datetime | None
     messages: list[MessageRead] = []
