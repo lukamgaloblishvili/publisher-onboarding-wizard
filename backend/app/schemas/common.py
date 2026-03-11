@@ -11,6 +11,7 @@ class MessageRead(BaseModel):
     entity_id: int
     direction: str
     body: str
+    formatted_body: str | None
     attachment_url: str | None
     attachment_name: str | None
     source: str
@@ -29,6 +30,7 @@ class IntegrationState(BaseModel):
     portal_status: str
     external_status: str | None
     frozen_description: str | None
+    frozen_description_html: str | None
     last_synced_at: datetime | None
     messages: list[MessageRead] = []
 
@@ -43,5 +45,6 @@ class ComplianceState(BaseModel):
     portal_status: str
     external_status: str | None
     frozen_description: str | None
+    frozen_description_html: str | None
     last_synced_at: datetime | None
     messages: list[MessageRead] = []

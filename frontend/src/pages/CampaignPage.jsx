@@ -64,6 +64,15 @@ export function CampaignPage() {
     await loadCampaign();
   }
 
+  async function runAction(action) {
+    try {
+      setError("");
+      await action();
+    } catch (nextError) {
+      setError(nextError.message);
+    }
+  }
+
   return (
     <div className="page-grid">
       <section className="page-header">
@@ -82,8 +91,10 @@ export function CampaignPage() {
               className="stack-form"
               onSubmit={async (event) => {
                 event.preventDefault();
-                await api.updateCampaign(campaign.id, campaignForm);
-                await loadCampaign();
+                await runAction(async () => {
+                  await api.updateCampaign(campaign.id, campaignForm);
+                  await loadCampaign();
+                });
               }}
             >
               <input value={campaignForm.name} onChange={(event) => setCampaignForm((current) => ({ ...current, name: event.target.value }))} />
@@ -109,8 +120,10 @@ export function CampaignPage() {
               className="stack-form"
               onSubmit={async (event) => {
                 event.preventDefault();
-                await api.linkIntegration(campaign.id, integrationForm);
-                await loadCampaign();
+                await runAction(async () => {
+                  await api.linkIntegration(campaign.id, integrationForm);
+                  await loadCampaign();
+                });
               }}
             >
               <input
@@ -129,8 +142,10 @@ export function CampaignPage() {
               className="stack-form"
               onSubmit={async (event) => {
                 event.preventDefault();
-                await api.linkCompliance(campaign.id, complianceForm);
-                await loadCampaign();
+                await runAction(async () => {
+                  await api.linkCompliance(campaign.id, complianceForm);
+                  await loadCampaign();
+                });
               }}
             >
               <input
@@ -153,16 +168,19 @@ export function CampaignPage() {
           title="Integration"
           entity={campaign.integration}
           isAdmin={user?.role === "admin"}
-          onSend={async (body) => {
-            await api.postIntegrationMessage(campaign.integration.id, body);
-            await loadCampaign();
-          }}
+          onSend={(body) =>
+            runAction(async () => {
+              await api.postIntegrationMessage(campaign.integration.id, body);
+              await loadCampaign();
+            })
+          }
           syncAction={
             campaign.integration
-              ? async () => {
-                  await api.syncIntegration(campaign.integration.id);
-                  await loadCampaign();
-                }
+              ? () =>
+                  runAction(async () => {
+                    await api.syncIntegration(campaign.integration.id);
+                    await loadCampaign();
+                  })
               : null
           }
         />
@@ -171,20 +189,25 @@ export function CampaignPage() {
           entity={campaign.compliance}
           isAdmin={user?.role === "admin"}
           uploadEnabled
-          onSend={async (body) => {
-            await api.postComplianceMessage(campaign.compliance.id, body);
-            await loadCampaign();
-          }}
-          onUpload={async (file, note) => {
-            await api.uploadComplianceFile(campaign.compliance.id, file, note);
-            await loadCampaign();
-          }}
+          onSend={(body) =>
+            runAction(async () => {
+              await api.postComplianceMessage(campaign.compliance.id, body);
+              await loadCampaign();
+            })
+          }
+          onUpload={(file, note) =>
+            runAction(async () => {
+              await api.uploadComplianceFile(campaign.compliance.id, file, note);
+              await loadCampaign();
+            })
+          }
           syncAction={
             campaign.compliance
-              ? async () => {
-                  await api.syncCompliance(campaign.compliance.id);
-                  await loadCampaign();
-                }
+              ? () =>
+                  runAction(async () => {
+                    await api.syncCompliance(campaign.compliance.id);
+                    await loadCampaign();
+                  })
               : null
           }
         />

@@ -28,6 +28,7 @@ from app.schemas.publisher import (
     PublisherUserCreate,
 )
 from app.services.jira import JiraAdapter
+from app.services.integration_sync import plain_text_to_html, reset_integration_snapshot, sync_integration_record
 from app.services.monday import MondayAdapter
 from app.services.storage import StorageService
 
@@ -55,6 +56,21 @@ def ensure_entity_access(session: Session, entity_type: str, entity_id: int, use
     if not campaign or (user.role != "admin" and campaign.publisher_id != user.publisher_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     return entity, campaign
+
+
+def ensure_unique_integration_ticket(session: Session, ticket_key: str, integration_id: int | None = None) -> None:
+    query = select(CampaignIntegration).where(CampaignIntegration.external_ticket_key == ticket_key)
+    if integration_id is not None:
+        query = query.where(CampaignIntegration.id != integration_id)
+    duplicate = session.exec(query).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Jira ticket {ticket_key} is already linked to campaign {duplicate.campaign_id}. "
+                "Unlink or relink the other campaign first."
+            ),
+        )
 
 
 @router.post("/auth/login", response_model=UserRead)
@@ -192,8 +208,13 @@ def link_integration(campaign_id: int, payload: IntegrationLinkRequest, session:
     integration = session.exec(select(CampaignIntegration).where(CampaignIntegration.campaign_id == campaign_id)).first()
     if not integration:
         integration = CampaignIntegration(campaign_id=campaign_id)
-    integration.external_ticket_key = payload.external_ticket_key
-    integration.external_ticket_url = payload.external_ticket_url
+    next_key = payload.external_ticket_key.strip()
+    next_url = (payload.external_ticket_url or "").strip()
+    ensure_unique_integration_ticket(session, next_key, integration.id)
+    if integration.id is not None:
+        reset_integration_snapshot(session, integration)
+    integration.external_ticket_key = next_key
+    integration.external_ticket_url = next_url or None
     session.add(integration)
     session.commit()
     session.refresh(integration)
@@ -220,34 +241,8 @@ def sync_integration(integration_id: int, session: Session = Depends(get_session
     integration = session.get(CampaignIntegration, integration_id)
     if not integration or not integration.external_ticket_key:
         raise HTTPException(status_code=404, detail="Integration not found")
-    ticket = jira.fetch_ticket(integration.external_ticket_key, integration.external_ticket_url)
-    comments = jira.fetch_public_comments(integration.external_ticket_key)
-    integration.external_ticket_url = ticket.url
-    integration.external_status = ticket.status
-    integration.portal_status = jira.map_status(ticket.status)
-    integration.last_synced_at = datetime.now(timezone.utc)
-    if not integration.frozen_description:
-        integration.frozen_description = ticket.description
-    session.add(integration)
-    existing_ids = {
-        message.external_message_id
-        for message in session.exec(select(Message).where(Message.entity_type == "integration", Message.entity_id == integration_id)).all()
-    }
-    for comment in comments:
-        if comment.id in existing_ids or not comment.is_public:
-            continue
-        session.add(
-            Message(
-                entity_type="integration",
-                entity_id=integration_id,
-                direction="inbound",
-                body=comment.body,
-                source="jira",
-                external_message_id=comment.id,
-                created_at=comment.created_at,
-            )
-        )
-    session.commit()
+    ensure_unique_integration_ticket(session, integration.external_ticket_key, integration.id)
+    integration = sync_integration_record(session, integration, jira)
     return integration_state(session, integration.campaign_id)
 
 
@@ -309,12 +304,15 @@ def get_integration_messages(integration_id: int, session: Session = Depends(get
 @router.post("/integration/{integration_id}/messages", response_model=MessageRead)
 def post_integration_message(integration_id: int, payload: MessageCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     integration, _campaign = ensure_entity_access(session, "integration", integration_id, user)
+    if integration.external_ticket_key:
+        ensure_unique_integration_ticket(session, integration.external_ticket_key, integration.id)
     external_id = jira.push_comment(integration.external_ticket_key or f"integration-{integration_id}", payload.body)
     message = Message(
         entity_type="integration",
         entity_id=integration_id,
         direction="outbound",
         body=payload.body,
+        formatted_body=plain_text_to_html(payload.body),
         source="portal",
         external_message_id=external_id,
     )
@@ -339,6 +337,7 @@ def post_compliance_message(compliance_id: int, payload: MessageCreate, session:
         entity_id=compliance_id,
         direction="outbound",
         body=payload.body,
+        formatted_body=plain_text_to_html(payload.body),
         source="portal",
         external_message_id=external_id,
     )
@@ -370,6 +369,7 @@ def upload_compliance_file(
         entity_id=compliance_id,
         direction="outbound",
         body=note,
+        formatted_body=plain_text_to_html(note),
         source="portal",
         attachment_url=attachment_url,
         attachment_name=attachment_name,

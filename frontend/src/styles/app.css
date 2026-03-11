@@ -335,6 +335,21 @@ textarea {
   color: var(--dark-green);
 }
 
+.status-input_required {
+  background: rgba(205, 98, 255, 0.12);
+  color: #8f32be;
+}
+
+.status-closed {
+  background: rgba(35, 35, 35, 0.1);
+  color: rgba(35, 35, 35, 0.8);
+}
+
+.status-final_approval_required {
+  background: rgba(255, 196, 61, 0.18);
+  color: #8b6200;
+}
+
 .description-box,
 .empty-state,
 .error-banner {
@@ -352,6 +367,9 @@ textarea {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 16px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .message {
@@ -367,6 +385,43 @@ textarea {
 
 .message p {
   margin: 10px 0 0;
+}
+
+.message-body {
+  margin-top: 10px;
+}
+
+.message-body p,
+.message-body ul,
+.message-body ol,
+.message-body blockquote,
+.message-body h1,
+.message-body h2,
+.message-body h3,
+.message-body h4 {
+  margin: 0 0 10px;
+}
+
+.message-body ul,
+.message-body ol {
+  padding-left: 20px;
+}
+
+.message-body a {
+  color: var(--dark-green);
+  text-decoration: underline;
+}
+
+.message-body code {
+  background: rgba(35, 35, 35, 0.06);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+.message-body blockquote {
+  border-left: 3px solid rgba(35, 35, 35, 0.12);
+  padding-left: 12px;
+  color: rgba(35, 35, 35, 0.8);
 }
 
 .message-meta {
