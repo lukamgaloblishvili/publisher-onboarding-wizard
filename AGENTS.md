@@ -25,9 +25,9 @@ Publishers log in to view their campaigns, track Integration and Compliance prog
 - Frontend: React
 - Backend: FastAPI
 - Hosting target: Vercel
-- Auth: simple username/password auth
-- Database: lightweight relational DB, acceptable and preferred for MVP
-- Styling: minimal, modern, lightweight
+- Auth: admin username/password plus publisher access code
+- Database: PostgreSQL via Docker Compose for local development
+- Styling: Tailwind CSS
 
 ## Required architecture
 Use a two-app structure:
@@ -40,7 +40,7 @@ Recommended:
 - Tailwind CSS
 - FastAPI + Pydantic
 - SQLModel or SQLAlchemy
-- SQLite for local dev, production-configurable database for deployment
+- PostgreSQL for local and production-configurable deployment
 - REST API only
 
 ## User roles
@@ -49,7 +49,8 @@ Can:
 - view all publishers
 - create and edit publishers
 - create and edit campaigns
-- create publisher credentials
+- generate one shared publisher access code
+- manage multiple notification emails per publisher
 - set Jira link/key for campaign Integration
 - set Monday link/reference for campaign Compliance
 - trigger sync
@@ -169,7 +170,8 @@ Keep this simple:
 ## Auth rules
 - Use secure password hashing
 - Use cookie-based sessions or httpOnly-cookie JWTs
-- Publisher users may only access their own records
+- Publisher access should be one shared login per publisher using a token/code
+- Publisher sessions may only access their own records
 - Admin users may access all records
 
 Keep auth implementation straightforward.
@@ -267,11 +269,12 @@ When coding:
 ## Seed data
 Provide a quick demo setup with:
 - 1 admin user
-- 1 publisher user
 - 1 publisher
+- 1 publisher access code
 - 2 campaigns
 - sample Integration thread
 - sample Compliance thread
+- sample notification emails
 - sample resources
 - sample Slack link
 
@@ -308,7 +311,6 @@ Optimize for clarity, correctness, and speed to a working product.
 - Feature branches are required for coding work
 - Never implement code changes directly on `main`
 - Commit messages do not need a strict convention, but must be descriptive
-- If fixing a specific issue or adding a feature, include a brief reference in the commit message
 - There are no pull request requirements by default; the user will guide when to push
 
 ## Branch relevance check
@@ -317,6 +319,6 @@ Before any code edit, run `git branch --show-current`.
 If the current branch is `main`, `master`, or clearly unrelated to the request:
 - stop and ask the user to create or switch branches first
 - suggest a branch name when needed
-- recommended format: `US-<number>-<slug>`
+- recommended format: `<short-feature-slug>`
 
 Treat this as a hard constraint, not optional guidance.

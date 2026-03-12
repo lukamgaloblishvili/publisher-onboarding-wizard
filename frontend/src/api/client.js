@@ -28,7 +28,8 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  login: (payload) => request("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+  loginAdmin: (payload) => request("/auth/admin/login", { method: "POST", body: JSON.stringify(payload) }),
+  loginPublisher: (payload) => request("/auth/publisher/login", { method: "POST", body: JSON.stringify(payload) }),
   logout: () => request("/auth/logout", { method: "POST" }),
   me: () => request("/me"),
   getCurrentPublisher: () => request("/publishers/current"),
@@ -37,18 +38,12 @@ export const api = {
   getAdminPublishers: () => request("/admin/publishers"),
   getAdminPublisher: (publisherId) => request(`/admin/publishers/${publisherId}`),
   createPublisher: (payload) => request("/admin/publishers", { method: "POST", body: JSON.stringify(payload) }),
+  updatePublisher: (publisherId, payload) => request(`/admin/publishers/${publisherId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  resetPublisherAccessCode: (publisherId) => request(`/admin/publishers/${publisherId}/access-code/reset`, { method: "POST" }),
   deletePublisher: (publisherId) => request(`/admin/publishers/${publisherId}`, { method: "DELETE" }),
-  updatePublisher: (publisherId, payload) =>
-    request(`/admin/publishers/${publisherId}`, { method: "PATCH", body: JSON.stringify(payload) }),
-  createPublisherUser: (publisherId, payload) =>
-    request(`/admin/publishers/${publisherId}/users`, { method: "POST", body: JSON.stringify(payload) }),
-  updateUser: (userId, payload) => request(`/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(payload) }),
-  deleteUser: (userId) => request(`/admin/users/${userId}`, { method: "DELETE" }),
-  createCampaign: (publisherId, payload) =>
-    request(`/admin/publishers/${publisherId}/campaigns`, { method: "POST", body: JSON.stringify(payload) }),
+  createCampaign: (publisherId, payload) => request(`/admin/publishers/${publisherId}/campaigns`, { method: "POST", body: JSON.stringify(payload) }),
   deleteCampaign: (campaignId) => request(`/admin/campaigns/${campaignId}`, { method: "DELETE" }),
-  updateCampaign: (campaignId, payload) =>
-    request(`/admin/campaigns/${campaignId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  updateCampaign: (campaignId, payload) => request(`/admin/campaigns/${campaignId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   linkIntegration: (campaignId, payload) =>
     request(`/admin/campaigns/${campaignId}/integration/link`, { method: "POST", body: JSON.stringify(payload) }),
   linkCompliance: (campaignId, payload) =>

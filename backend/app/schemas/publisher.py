@@ -2,7 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.auth import UserRead
 from app.schemas.common import ComplianceState, IntegrationState
 
 
@@ -25,6 +24,7 @@ class PublisherCreate(BaseModel):
     name: str
     slug: str
     slack_channel_embed_url: str | None = None
+    notification_emails: list[str] = []
     resources_content_markdown: str | None = None
 
 
@@ -32,6 +32,7 @@ class PublisherUpdate(BaseModel):
     name: str | None = None
     slug: str | None = None
     slack_channel_embed_url: str | None = None
+    notification_emails: list[str] | None = None
     resources_content_markdown: str | None = None
 
 
@@ -42,16 +43,18 @@ class PublisherRead(BaseModel):
     name: str
     slug: str
     slack_channel_embed_url: str | None
+    notification_emails: list[str] = []
+    has_access_code: bool
+    access_code_last_rotated_at: datetime | None
     resources_content_markdown: str | None
     created_at: datetime
     updated_at: datetime
-    users: list[UserRead] = []
     campaigns: list[CampaignRead] = []
 
 
-class PublisherUserCreate(BaseModel):
-    username: str
-    password: str
+class PublisherAccessCodeResetRead(BaseModel):
+    publisher: PublisherRead
+    access_code: str
 
 
 class CampaignCreate(BaseModel):

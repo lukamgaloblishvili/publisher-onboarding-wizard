@@ -1,18 +1,23 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class LoginRequest(BaseModel):
+class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
 
-class UserRead(BaseModel):
+class PublisherCodeLoginRequest(BaseModel):
+    access_code: str
+
+
+class SessionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    username: str
     role: str
+    username: str | None = None
     publisher_id: int | None
+    publisher_name: str | None = None
+    publisher_slug: str | None = None
 
 
 class UserUpdate(BaseModel):

@@ -12,7 +12,6 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True)
     password_hash: str
     role: str = Field(index=True)
-    publisher_id: int | None = Field(default=None, foreign_key="publisher.id")
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -21,6 +20,9 @@ class Publisher(SQLModel, table=True):
     name: str
     slug: str = Field(index=True, unique=True)
     slack_channel_embed_url: str | None = None
+    notification_emails_json: str | None = None
+    access_code_hash: str | None = None
+    access_code_last_rotated_at: datetime | None = None
     resources_content_markdown: str | None = None
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

@@ -2,8 +2,7 @@ import json
 
 from sqlmodel import Session, select
 
-from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher, User
-from app.schemas.auth import UserRead
+from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher
 from app.schemas.common import ComplianceState, IntegrationState, MessageRead
 from app.schemas.publisher import CampaignRead, PublisherRead
 
@@ -49,9 +48,10 @@ def campaign_read(session: Session, campaign: Campaign) -> CampaignRead:
 
 def publisher_read(session: Session, publisher: Publisher) -> PublisherRead:
     campaigns = session.exec(select(Campaign).where(Campaign.publisher_id == publisher.id).order_by(Campaign.created_at)).all()
-    users = session.exec(select(User).where(User.publisher_id == publisher.id).order_by(User.created_at)).all()
+    notification_emails = json.loads(publisher.notification_emails_json or "[]")
     return PublisherRead(
-        **publisher.model_dump(),
-        users=[UserRead.model_validate(user) for user in users],
+        **publisher.model_dump(exclude={"notification_emails_json", "access_code_hash"}),
+        notification_emails=notification_emails,
+        has_access_code=bool(publisher.access_code_hash),
         campaigns=[campaign_read(session, campaign) for campaign in campaigns],
     )

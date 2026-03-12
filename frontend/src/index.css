@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply min-h-screen bg-px-cloud text-px-ink antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(205, 98, 255, 0.09), transparent 24%),
+      linear-gradient(180deg, #f5faf7 0%, #f8f8f8 100%);
+    font-family: "Roboto", Tahoma, sans-serif;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+}
+
+@layer components {
+  .app-card {
+    @apply rounded-[1.4rem] border border-black/10 bg-white/85 p-5 shadow-soft backdrop-blur-sm;
+  }
+
+  .app-input {
+    @apply w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-px-ink shadow-sm outline-none transition focus:border-px-green focus:ring-2 focus:ring-px-green/20;
+  }
+
+  .app-label {
+    @apply flex w-full flex-col gap-2 text-sm font-medium text-px-ink;
+  }
+
+  .app-helper {
+    @apply text-sm leading-6 text-black/60;
+  }
+
+  .app-button-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-px-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-px-deep disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .app-button-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-px-ink transition hover:border-px-green/40 hover:text-px-deep;
+  }
+
+  .app-button-link {
+    @apply inline-flex items-center text-sm font-medium text-black/70 transition hover:text-px-deep;
+  }
+
+  .app-pill {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  }
+}

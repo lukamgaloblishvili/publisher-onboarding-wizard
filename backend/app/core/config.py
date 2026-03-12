@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+ALEMBIC_DIR = BASE_DIR / "alembic"
 
 
 class Settings(BaseSettings):
@@ -11,7 +12,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     secret_key: str = "change-me"
     session_cookie_name: str = "px_session"
-    database_url: str = f"sqlite:///{(BASE_DIR / 'px_wizard.db').as_posix()}"
+    session_max_age_seconds: int = 60 * 60 * 24 * 14
+    session_cookie_secure: bool = False
+    database_url: str = "postgresql+psycopg://px:px_password@127.0.0.1:5432/px_onboarding_wizard"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     upload_dir: str = str(BASE_DIR / "app" / "uploads")
     use_mock_integrations: bool = True
@@ -22,6 +25,8 @@ class Settings(BaseSettings):
     integration_auto_sync_enabled: bool = True
     monday_api_token: str | None = None
     max_upload_bytes: int = 5 * 1024 * 1024
+    alembic_ini_path: str = str(BASE_DIR / "alembic.ini")
+    alembic_script_location: str = str(ALEMBIC_DIR)
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
