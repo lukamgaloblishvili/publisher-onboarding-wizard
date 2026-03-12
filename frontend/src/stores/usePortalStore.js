@@ -11,6 +11,17 @@ function updateCampaignInPublisher(publisher, campaign) {
   };
 }
 
+function campaignsMapFromPublisher(publisher) {
+  if (!publisher) {
+    return {};
+  }
+  return Object.fromEntries((publisher.campaigns || []).map((campaign) => [campaign.id, campaign]));
+}
+
+function resolveCampaign(state, campaignId) {
+  return state.campaignsById[campaignId] || state.currentPublisher?.campaigns.find((campaign) => campaign.id === campaignId) || state.adminPublisher?.campaigns.find((campaign) => campaign.id === campaignId);
+}
+
 export const usePortalStore = create((set, get) => ({
   currentPublisher: null,
   resources: null,
@@ -20,7 +31,7 @@ export const usePortalStore = create((set, get) => ({
   latestAccessCode: "",
   async loadCurrentPublisher() {
     const publisher = await api.getCurrentPublisher();
-    set({ currentPublisher: publisher });
+    set((state) => ({ currentPublisher: publisher, campaignsById: { ...state.campaignsById, ...campaignsMapFromPublisher(publisher) } }));
     return publisher;
   },
   async loadResources() {
@@ -35,7 +46,11 @@ export const usePortalStore = create((set, get) => ({
   },
   async loadAdminPublisher(publisherId) {
     const adminPublisher = await api.getAdminPublisher(publisherId);
-    set({ adminPublisher, latestAccessCode: "" });
+    set((state) => ({
+      adminPublisher,
+      latestAccessCode: "",
+      campaignsById: { ...state.campaignsById, ...campaignsMapFromPublisher(adminPublisher) }
+    }));
     return adminPublisher;
   },
   async createPublisher(payload) {
@@ -142,7 +157,7 @@ export const usePortalStore = create((set, get) => ({
   async postIntegrationMessage(campaignId, integrationId, body) {
     const message = await api.postIntegrationMessage(integrationId, body);
     set((state) => {
-      const campaign = state.campaignsById[campaignId];
+      const campaign = resolveCampaign(state, campaignId);
       if (!campaign?.integration) {
         return state;
       }
@@ -164,7 +179,7 @@ export const usePortalStore = create((set, get) => ({
   async postComplianceMessage(campaignId, complianceId, body) {
     const message = await api.postComplianceMessage(complianceId, body);
     set((state) => {
-      const campaign = state.campaignsById[campaignId];
+      const campaign = resolveCampaign(state, campaignId);
       if (!campaign?.compliance) {
         return state;
       }
@@ -186,7 +201,7 @@ export const usePortalStore = create((set, get) => ({
   async uploadComplianceFile(campaignId, complianceId, file, note) {
     const message = await api.uploadComplianceFile(complianceId, file, note);
     set((state) => {
-      const campaign = state.campaignsById[campaignId];
+      const campaign = resolveCampaign(state, campaignId);
       if (!campaign?.compliance) {
         return state;
       }
