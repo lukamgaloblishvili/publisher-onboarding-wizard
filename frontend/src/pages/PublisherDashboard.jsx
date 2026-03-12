@@ -30,9 +30,9 @@ export function PublisherDashboard({ publisher }) {
         <Card title="Shared Slack">
           {publisher.slack_channel_embed_url ? (
             <div className="stack">
-              <p>Use this shared Slack channel to message your PX account manager and sales team.</p>
+              <p>Use this dedicated shared Slack channel to message your PX account manager and sales team.</p>
               <a className="primary-button inline-button" href={publisher.slack_channel_embed_url} target="_blank" rel="noreferrer">
-                Open Slack
+                Open Slack Channel
               </a>
             </div>
           ) : (

@@ -66,11 +66,18 @@ export function AdminDashboard() {
           <form className="stack-form" onSubmit={handleCreate}>
             <input placeholder="Publisher name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
             <input placeholder="Slug" value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} />
-            <input
-              placeholder="Slack URL"
-              value={form.slack_channel_embed_url}
-              onChange={(event) => setForm((current) => ({ ...current, slack_channel_embed_url: event.target.value }))}
-            />
+            <label>
+              Shared Slack Channel URL
+              <input
+                placeholder="https://slack.com/app_redirect?channel=..."
+                value={form.slack_channel_embed_url}
+                onChange={(event) => setForm((current) => ({ ...current, slack_channel_embed_url: event.target.value }))}
+              />
+            </label>
+            <p className="form-helper-text">
+              Paste the direct Slack link for the dedicated channel shared with this publisher. Use the channel link copied from Slack so publishers land in the
+              correct conversation.
+            </p>
             <textarea
               rows="6"
               value={form.resources_content_markdown}

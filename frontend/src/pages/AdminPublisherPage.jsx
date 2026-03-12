@@ -63,10 +63,17 @@ export function AdminPublisherPage() {
           >
             <input value={publisherForm.name} onChange={(event) => setPublisherForm((current) => ({ ...current, name: event.target.value }))} />
             <input value={publisherForm.slug} onChange={(event) => setPublisherForm((current) => ({ ...current, slug: event.target.value }))} />
-            <input
-              value={publisherForm.slack_channel_embed_url}
-              onChange={(event) => setPublisherForm((current) => ({ ...current, slack_channel_embed_url: event.target.value }))}
-            />
+            <label>
+              Shared Slack Channel URL
+              <input
+                placeholder="https://slack.com/app_redirect?channel=..."
+                value={publisherForm.slack_channel_embed_url}
+                onChange={(event) => setPublisherForm((current) => ({ ...current, slack_channel_embed_url: event.target.value }))}
+              />
+            </label>
+            <p className="form-helper-text">
+              Paste the direct Slack link for the dedicated channel shared with this publisher. The best option is the exact channel URL copied from Slack.
+            </p>
             <textarea
               rows="8"
               value={publisherForm.resources_content_markdown}
