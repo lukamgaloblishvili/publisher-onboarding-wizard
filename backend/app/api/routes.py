@@ -99,6 +99,18 @@ def reset_compliance_snapshot(session: Session, compliance: CampaignCompliance) 
     session.exec(delete(Message).where(Message.entity_type == "compliance", Message.entity_id == compliance.id))
 
 
+def delete_campaign_graph(session: Session, campaign: Campaign) -> None:
+    integration = session.exec(select(CampaignIntegration).where(CampaignIntegration.campaign_id == campaign.id)).first()
+    if integration:
+        session.exec(delete(Message).where(Message.entity_type == "integration", Message.entity_id == integration.id))
+        session.delete(integration)
+    compliance = session.exec(select(CampaignCompliance).where(CampaignCompliance.campaign_id == campaign.id)).first()
+    if compliance:
+        session.exec(delete(Message).where(Message.entity_type == "compliance", Message.entity_id == compliance.id))
+        session.delete(compliance)
+    session.delete(campaign)
+
+
 @router.post("/auth/login", response_model=UserRead)
 def login(payload: LoginRequest, response: Response, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.username == payload.username)).first()
@@ -165,6 +177,22 @@ def update_publisher(publisher_id: int, payload: PublisherUpdate, session: Sessi
     return publisher_read(session, publisher)
 
 
+@router.delete("/admin/publishers/{publisher_id}", status_code=204)
+def delete_publisher(publisher_id: int, session: Session = Depends(get_session), _: User = Depends(require_admin)):
+    publisher = session.get(Publisher, publisher_id)
+    if not publisher:
+        raise HTTPException(status_code=404, detail="Publisher not found")
+    campaigns = session.exec(select(Campaign).where(Campaign.publisher_id == publisher_id)).all()
+    for campaign in campaigns:
+        delete_campaign_graph(session, campaign)
+    users = session.exec(select(User).where(User.publisher_id == publisher_id)).all()
+    for user in users:
+        session.delete(user)
+    session.delete(publisher)
+    session.commit()
+    return Response(status_code=204)
+
+
 @router.post("/admin/publishers/{publisher_id}/users", response_model=UserRead)
 def create_publisher_user(publisher_id: int, payload: PublisherUserCreate, session: Session = Depends(get_session), _: User = Depends(require_admin)):
     if not session.get(Publisher, publisher_id):
@@ -189,6 +217,18 @@ def update_user(user_id: int, payload: UserUpdate, session: Session = Depends(ge
     session.commit()
     session.refresh(user)
     return UserRead.model_validate(user)
+
+
+@router.delete("/admin/users/{user_id}", status_code=204)
+def delete_user(user_id: int, session: Session = Depends(get_session), _: User = Depends(require_admin)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != "publisher":
+        raise HTTPException(status_code=400, detail="Only publisher logins can be deleted")
+    session.delete(user)
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.post("/admin/publishers/{publisher_id}/campaigns", response_model=CampaignRead)
@@ -225,6 +265,16 @@ def update_campaign(campaign_id: int, payload: CampaignUpdate, session: Session 
     session.commit()
     session.refresh(campaign)
     return campaign_read(session, campaign)
+
+
+@router.delete("/admin/campaigns/{campaign_id}", status_code=204)
+def delete_campaign(campaign_id: int, session: Session = Depends(get_session), _: User = Depends(require_admin)):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    delete_campaign_graph(session, campaign)
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.post("/admin/campaigns/{campaign_id}/integration/link", response_model=IntegrationState)

@@ -1,14 +1,11 @@
-export const CAMPAIGN_TYPE_OPTIONS = [
-  ["api_real_time_leads_ping_post", "API Real-Time Leads (Ping Post)"],
-  ["api_real_time_leads_direct_post", "API Real-Time Leads (Direct Post)"],
-  ["aged_data", "Aged Data"],
-  ["ping_post_calls", "Ping Post Calls"],
-  ["branded_tracking_link", "Branded Tracking Link"],
-  ["branded_api", "Branded API"],
-  ["calls", "Calls"]
+export const DEFAULT_LAUNCH_MILESTONES = [
+  "Integration instructions shared",
+  "Successful test lead sent to PX",
+  "Lead form includes all required fields, including TCPA disclosure",
+  "Creative approval + Jornaya Entity Code confirmed (if applicable)",
+  "Account switched to production (need additional test Ping in production)",
+  "Green light from account manager to start sending live leads"
 ];
-
-export const CAMPAIGN_TYPE_LABELS = Object.fromEntries(CAMPAIGN_TYPE_OPTIONS);
 
 export const DEFAULT_RESOURCES_MARKDOWN = `## PX Default Resources
 

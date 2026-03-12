@@ -37,13 +37,16 @@ export const api = {
   getAdminPublishers: () => request("/admin/publishers"),
   getAdminPublisher: (publisherId) => request(`/admin/publishers/${publisherId}`),
   createPublisher: (payload) => request("/admin/publishers", { method: "POST", body: JSON.stringify(payload) }),
+  deletePublisher: (publisherId) => request(`/admin/publishers/${publisherId}`, { method: "DELETE" }),
   updatePublisher: (publisherId, payload) =>
     request(`/admin/publishers/${publisherId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   createPublisherUser: (publisherId, payload) =>
     request(`/admin/publishers/${publisherId}/users`, { method: "POST", body: JSON.stringify(payload) }),
   updateUser: (userId, payload) => request(`/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteUser: (userId) => request(`/admin/users/${userId}`, { method: "DELETE" }),
   createCampaign: (publisherId, payload) =>
     request(`/admin/publishers/${publisherId}/campaigns`, { method: "POST", body: JSON.stringify(payload) }),
+  deleteCampaign: (campaignId) => request(`/admin/campaigns/${campaignId}`, { method: "DELETE" }),
   updateCampaign: (campaignId, payload) =>
     request(`/admin/campaigns/${campaignId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   linkIntegration: (campaignId, payload) =>

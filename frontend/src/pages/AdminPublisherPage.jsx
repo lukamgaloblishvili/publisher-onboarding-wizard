@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Card } from "../components/Cards";
 import { StatusPill } from "../components/StatusPill";
-import { CAMPAIGN_TYPE_OPTIONS } from "../constants";
 
 export function AdminPublisherPage() {
   const { publisherId } = useParams();
+  const navigate = useNavigate();
   const [publisher, setPublisher] = useState(null);
   const [publisherForm, setPublisherForm] = useState(null);
   const [campaignForm, setCampaignForm] = useState({
     name: "",
-    status: "in_progress",
-    campaign_type: "api_real_time_leads_ping_post"
+    status: "in_progress"
   });
   const [userForm, setUserForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
@@ -74,6 +73,21 @@ export function AdminPublisherPage() {
               onChange={(event) => setPublisherForm((current) => ({ ...current, resources_content_markdown: event.target.value }))}
             />
             <button className="primary-button">Save publisher</button>
+            <div className="destructive-row">
+              <button
+                type="button"
+                className="danger-link-button"
+                onClick={async () => {
+                  if (!window.confirm(`Delete publisher "${publisher.name}" and all related campaigns and logins?`)) {
+                    return;
+                  }
+                  await api.deletePublisher(publisher.id);
+                  navigate("/admin");
+                }}
+              >
+                Delete publisher
+              </button>
+            </div>
           </form>
         </Card>
         <Card title="Publisher logins">
@@ -115,7 +129,22 @@ export function AdminPublisherPage() {
                   <strong>{user.username}</strong>
                   <input name="username" defaultValue={user.username} />
                   <input name="password" type="password" placeholder="New password" />
-                  <button className="ghost-button">Update login</button>
+                  <div className="card-actions compact-actions">
+                    <button className="ghost-button">Update login</button>
+                    <button
+                      type="button"
+                      className="danger-link-button"
+                      onClick={async () => {
+                        if (!window.confirm(`Delete login "${user.username}"?`)) {
+                          return;
+                        }
+                        await api.deleteUser(user.id);
+                        await loadPublisher();
+                      }}
+                    >
+                      Delete login
+                    </button>
+                  </div>
                 </form>
               ))
             ) : (
@@ -129,7 +158,7 @@ export function AdminPublisherPage() {
             onSubmit={async (event) => {
               event.preventDefault();
               await api.createCampaign(publisher.id, campaignForm);
-              setCampaignForm({ name: "", status: "in_progress", campaign_type: "api_real_time_leads_ping_post" });
+              setCampaignForm({ name: "", status: "in_progress" });
               await loadPublisher();
             }}
           >
@@ -140,13 +169,6 @@ export function AdminPublisherPage() {
               <option value="waiting_on_publisher">Waiting on Publisher</option>
               <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
-            </select>
-            <select value={campaignForm.campaign_type} onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_type: event.target.value }))}>
-              {CAMPAIGN_TYPE_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
             </select>
             <button className="primary-button">Add campaign</button>
           </form>
@@ -161,7 +183,22 @@ export function AdminPublisherPage() {
                     Integration {campaign.integration?.external_ticket_key || "unlinked"} | Compliance {campaign.compliance?.external_item_id || "unlinked"}
                   </span>
                 </div>
-                <StatusPill status={campaign.status} />
+                <div className="card-actions compact-actions">
+                  <StatusPill status={campaign.status} />
+                  <button
+                    type="button"
+                    className="danger-link-button"
+                    onClick={async () => {
+                      if (!window.confirm(`Delete campaign "${campaign.name}"?`)) {
+                        return;
+                      }
+                      await api.deleteCampaign(campaign.id);
+                      await loadPublisher();
+                    }}
+                  >
+                    Delete campaign
+                  </button>
+                </div>
               </div>
             ))}
           </div>
