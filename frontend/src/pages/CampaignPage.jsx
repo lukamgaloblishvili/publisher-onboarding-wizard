@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Card } from "../components/Cards";
 import { ChecklistCard } from "../components/ChecklistCard";
 import { MessagePanel } from "../components/MessagePanel";
 import { StatusPill } from "../components/StatusPill";
-import { CAMPAIGN_TYPE_OPTIONS } from "../constants";
+import { DEFAULT_LAUNCH_MILESTONES } from "../constants";
 import { useAuth } from "../hooks/useAuth";
 
 export function CampaignPage() {
   const { campaignId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [campaign, setCampaign] = useState(null);
   const [campaignForm, setCampaignForm] = useState({
     name: "",
-    status: "in_progress",
-    campaign_type: "api_real_time_leads_ping_post"
+    status: "in_progress"
   });
+  const [milestonesDraft, setMilestonesDraft] = useState("");
   const [integrationForm, setIntegrationForm] = useState({ external_ticket_key: "", external_ticket_url: "" });
   const [complianceForm, setComplianceForm] = useState({ external_item_id: "", external_ticket_url: "" });
   const [error, setError] = useState("");
@@ -28,7 +29,8 @@ export function CampaignPage() {
       setError("");
       const data = await api.getCampaign(campaignId);
       setCampaign(data);
-      setCampaignForm({ name: data.name, status: data.status, campaign_type: data.campaign_type });
+      setCampaignForm({ name: data.name, status: data.status });
+      setMilestonesDraft((data.checklist_items || []).map((item) => item.label).join("\n"));
       setIntegrationForm({
         external_ticket_key: data.integration?.external_ticket_key || "",
         external_ticket_url: data.integration?.external_ticket_url || ""
@@ -73,9 +75,36 @@ export function CampaignPage() {
     }
   }
 
+  function draftToChecklistItems() {
+    const rows = milestonesDraft
+      .split("\n")
+      .map((row) => row.trim())
+      .filter(Boolean);
+    const currentItems = campaign.checklist_items || [];
+    return rows.map((label, index) => ({
+      label,
+      completed: Boolean(currentItems[index]?.completed)
+    }));
+  }
+
   return (
     <div className="page-grid">
       <section className="page-header">
+        <div className="page-header-top">
+          <button
+            type="button"
+            className="secondary-link-button inline-button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+                return;
+              }
+              navigate(user?.role === "admin" ? `/admin/publishers/${campaign.publisher_id}` : "/");
+            }}
+          >
+            ← Back to {user?.role === "admin" ? "publisher" : "dashboard"}
+          </button>
+        </div>
         <span className="eyebrow">Campaign Detail</span>
         <h1>{campaign.name}</h1>
         <div className="inline-meta">
@@ -105,14 +134,37 @@ export function CampaignPage() {
                 <option value="blocked">Blocked</option>
                 <option value="completed">Completed</option>
               </select>
-              <select value={campaignForm.campaign_type} onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_type: event.target.value }))}>
-                {CAMPAIGN_TYPE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
               <button className="primary-button">Save campaign</button>
+            </form>
+          </Card>
+          <Card title="Launch Milestones">
+            <form
+              className="stack-form"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                await runAction(async () => {
+                  const checklistItems = draftToChecklistItems();
+                  await api.updateCampaign(campaign.id, { checklist_items: checklistItems });
+                  await loadCampaign();
+                });
+              }}
+            >
+              <textarea
+                rows="8"
+                value={milestonesDraft}
+                onChange={(event) => setMilestonesDraft(event.target.value)}
+                placeholder="One milestone per line"
+              />
+              <div className="card-actions">
+                <button className="primary-button">Save milestones</button>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => setMilestonesDraft(DEFAULT_LAUNCH_MILESTONES.join("\n"))}
+                >
+                  Reset defaults
+                </button>
+              </div>
             </form>
           </Card>
           <Card title="External links">

@@ -115,7 +115,8 @@ textarea {
 }
 
 .primary-button,
-.ghost-button {
+.ghost-button,
+.danger-button {
   border-radius: 999px;
   padding: 12px 18px;
   cursor: pointer;
@@ -132,9 +133,48 @@ textarea {
   border-color: var(--border);
 }
 
+.danger-button {
+  background: rgba(198, 40, 40, 0.1);
+  border-color: rgba(198, 40, 40, 0.3);
+  color: #8c1d1d;
+}
+
 .inline-button {
   display: inline-flex;
   width: fit-content;
+}
+
+.secondary-link-button,
+.danger-link-button {
+  border: 0;
+  background: transparent;
+  width: fit-content;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.94rem;
+}
+
+.secondary-link-button {
+  color: rgba(35, 35, 35, 0.7);
+  line-height: 1.2;
+}
+
+.secondary-link-button:hover {
+  color: var(--dark-green);
+}
+
+.danger-link-button {
+  color: rgba(140, 29, 29, 0.84);
+}
+
+.danger-link-button:hover {
+  color: #8c1d1d;
+}
+
+.destructive-row {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(35, 35, 35, 0.08);
 }
 
 .app-shell {
@@ -223,6 +263,10 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.page-header-top {
+  margin-bottom: 8px;
 }
 
 .page-header p,
@@ -449,6 +493,10 @@ textarea {
   align-items: center;
 }
 
+.compact-actions {
+  gap: 10px;
+}
+
 .markdown h3 {
   margin-bottom: 8px;
 }
@@ -478,7 +526,7 @@ textarea {
 
 .progress-track {
   width: 180px;
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
   background: rgba(35, 35, 35, 0.08);
   overflow: hidden;
@@ -486,7 +534,7 @@ textarea {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--green), var(--purple));
+  background: linear-gradient(90deg, var(--green), #4ebf7f);
 }
 
 .checklist-list {
@@ -498,12 +546,39 @@ textarea {
 .checklist-item {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
+  border: 1px solid rgba(35, 35, 35, 0.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: left;
+  width: 100%;
 }
 
-.checklist-item input {
-  width: auto;
-  margin-top: 4px;
+.checklist-item:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.checklist-item:not(:disabled) {
+  cursor: pointer;
+}
+
+.milestone-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(35, 35, 35, 0.2);
+  flex: 0 0 10px;
+}
+
+.milestone-indicator.is-complete {
+  background: var(--dark-green);
+}
+
+.checklist-item.is-complete {
+  border-color: rgba(19, 116, 62, 0.25);
+  background: rgba(41, 156, 97, 0.08);
 }
 
 .markdown-list-item {
