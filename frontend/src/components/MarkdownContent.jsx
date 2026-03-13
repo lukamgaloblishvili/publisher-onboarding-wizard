@@ -27,28 +27,68 @@ function renderInline(text, keyPrefix) {
 }
 
 export function MarkdownContent({ content }) {
-  return (
-    <div className="space-y-3 text-sm leading-7 text-black/80">
-      {content.split("\n").map((line, index) => {
-        if (!line.trim()) {
-          return <div key={index} className="h-2" />;
-        }
-        if (line.startsWith("## ")) {
-          return (
-            <h3 key={index} className="pt-2 text-base font-semibold text-px-ink">
-              {line.replace("## ", "")}
-            </h3>
-          );
-        }
-        if (line.startsWith("- ")) {
-          return (
-            <p key={index} className="pl-4">
-              • {renderInline(line.replace("- ", ""), `list-${index}`)}
-            </p>
-          );
-        }
-        return <p key={index}>{renderInline(line, `line-${index}`)}</p>;
-      })}
-    </div>
-  );
+  const lines = content.split("\n");
+  const blocks = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (line.startsWith("## ")) {
+      blocks.push(
+        <h3 key={`heading-${index}`} className="text-lg font-semibold text-px-ink">
+          {line.replace("## ", "")}
+        </h3>
+      );
+      index += 1;
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      const items = [];
+      const listStartIndex = index;
+
+      while (index < lines.length && lines[index].trim().startsWith("- ")) {
+        items.push(lines[index].trim().replace("- ", ""));
+        index += 1;
+      }
+
+      blocks.push(
+        <ul key={`list-${listStartIndex}`} className="space-y-3">
+          {items.map((item, itemIndex) => (
+            <li key={`item-${listStartIndex}-${itemIndex}`} className="flex gap-3 text-black/80">
+              <span className="mt-[0.72rem] h-2 w-2 rounded-full bg-px-green/70" />
+              <span className="flex-1">{renderInline(item, `list-${listStartIndex}-${itemIndex}`)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    const paragraphLines = [];
+    const paragraphStartIndex = index;
+
+    while (index < lines.length) {
+      const currentLine = lines[index].trim();
+      if (!currentLine || currentLine.startsWith("## ") || currentLine.startsWith("- ")) {
+        break;
+      }
+      paragraphLines.push(currentLine);
+      index += 1;
+    }
+
+    blocks.push(
+      <p key={`paragraph-${paragraphStartIndex}`} className="text-black/75">
+        {renderInline(paragraphLines.join(" "), `line-${paragraphStartIndex}`)}
+      </p>
+    );
+  }
+
+  return <div className="space-y-5 text-[15px] leading-7">{blocks}</div>;
 }

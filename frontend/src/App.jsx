@@ -8,7 +8,7 @@ import { AdminPublisherPage } from "./pages/AdminPublisherPage";
 import { CampaignPage } from "./pages/CampaignPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { PublisherDashboard } from "./pages/PublisherDashboard";
+import { PublisherWorkspacePage } from "./pages/PublisherWorkspacePage";
 import { ResourcesPage } from "./pages/ResourcesPage";
 
 function ProtectedLayout() {
@@ -43,7 +43,7 @@ function ProtectedLayout() {
             user.role === "admin" ? (
               <Navigate to="/admin" replace />
             ) : currentPublisher ? (
-              <PublisherDashboard publisher={currentPublisher} />
+              <PublisherWorkspacePage publisher={currentPublisher} />
             ) : (
               <div className="app-card text-sm text-black/60">Loading dashboard...</div>
             )
@@ -51,8 +51,8 @@ function ProtectedLayout() {
         />
         <Route path="/admin" element={user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" replace />} />
         <Route path="/admin/publishers/:publisherId" element={user.role === "admin" ? <AdminPublisherPage /> : <Navigate to="/" replace />} />
-        <Route path="/campaigns/:campaignId" element={<CampaignPage />} />
-        <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/campaigns/:campaignId" element={user.role === "admin" ? <CampaignPage /> : <Navigate to="/" replace />} />
+        <Route path="/resources" element={user.role === "admin" ? <ResourcesPage /> : <Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>

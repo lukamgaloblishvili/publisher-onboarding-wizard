@@ -17,6 +17,41 @@ export function AppShell({ children }) {
     navigate("/login");
   }
 
+  if (user?.role !== "admin") {
+    return (
+      <div className="min-h-screen">
+        <header className="border-b border-black/10 bg-white/75 backdrop-blur">
+          <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <Link className="flex items-center gap-4" to="/">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-sm">
+                <img
+                  className="max-h-9 max-w-9 object-contain"
+                  src="/px-logo.svg"
+                  alt="PX"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    event.currentTarget.parentElement.textContent = "PX";
+                  }}
+                />
+              </span>
+              <div>
+                <strong className="block text-sm font-semibold text-px-ink">PX Onboarding Workspace</strong>
+                <span className="text-sm text-black/60">Campaign launch coordination</span>
+              </div>
+            </Link>
+            <div className="flex items-center gap-3">
+              {user?.publisher_slug ? <span className="text-xs uppercase tracking-[0.16em] text-black/45">{user.publisher_slug}</span> : null}
+              <button className="app-button-secondary" onClick={handleLogout}>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
       <aside className="border-b border-black/10 bg-white/70 px-5 py-6 backdrop-blur lg:min-h-screen lg:border-b-0 lg:border-r">
