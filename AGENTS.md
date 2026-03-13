@@ -24,9 +24,9 @@ Publishers log in to view their campaigns, track Integration and Compliance prog
 ## Stack
 - Frontend: React
 - Backend: FastAPI
-- Hosting target: Vercel
+- Hosting target: deployment-agnostic, container-friendly
 - Auth: admin username/password plus publisher access code
-- Database: PostgreSQL via Docker Compose for local development
+- Database: PostgreSQL with full-app Docker Compose support for local development
 - Styling: Tailwind CSS
 
 ## Required architecture
@@ -173,6 +173,8 @@ Keep this simple:
 - Publisher access should be one shared login per publisher using a token/code
 - Publisher sessions may only access their own records
 - Admin users may access all records
+- Never commit live secrets or tokens to tracked files
+- Encrypt sensitive values stored at rest when they are persisted by the app
 
 Keep auth implementation straightforward.
 
@@ -299,7 +301,7 @@ Return:
 3. environment variable template
 4. seed/bootstrap instructions
 5. notes on mock vs real integrations
-6. deployment notes for Vercel
+6. deployment notes for container-based hosting
 
 ## Important implementation bias
 Choose the simplest approach that results in a coherent, demonstrable MVP.

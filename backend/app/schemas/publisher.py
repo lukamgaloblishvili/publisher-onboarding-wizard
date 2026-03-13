@@ -71,7 +71,7 @@ class CampaignUpdate(BaseModel):
 
 
 class IntegrationLinkRequest(BaseModel):
-    external_ticket_key: str
+    external_ticket_key: str | None = None
     external_ticket_url: str | None = None
 
 

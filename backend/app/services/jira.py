@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape
+import re
 
 import httpx
 
@@ -28,6 +29,7 @@ class JiraComment:
 
 class JiraAdapter:
     portal_comment_prefix = "[Portal]"
+    ticket_url_pattern = re.compile(r"/browse/(?P<ticket_key>[A-Z][A-Z0-9_]+-\d+)", re.IGNORECASE)
 
     def _client(self) -> httpx.Client:
         auth = (settings.jira_email or "", settings.jira_api_token or "")
@@ -109,6 +111,17 @@ class JiraAdapter:
                 if isinstance(value, dict):
                     return bool(value.get("internal") is False or value.get("public") is True)
         return not bool(comment.get("visibility"))
+
+    def parse_ticket_reference(self, ticket_key: str | None = None, ticket_url: str | None = None) -> tuple[str, str | None]:
+        normalized_key = (ticket_key or "").strip()
+        normalized_url = (ticket_url or "").strip() or None
+        if normalized_key:
+            return normalized_key.upper(), normalized_url
+        source = normalized_url or normalized_key
+        match = self.ticket_url_pattern.search(source or "")
+        if match:
+            return match.group("ticket_key").upper(), normalized_url or source
+        raise ValueError("A valid Jira ticket URL is required")
 
     def fetch_ticket(self, ticket_key: str, ticket_url: str | None = None) -> JiraTicket:
         if settings.use_mock_integrations:

@@ -21,13 +21,6 @@ function sectionButton(isActive) {
   ].join(" ");
 }
 
-function campaignDetail(campaign) {
-  return [
-    campaign.integration?.external_ticket_key ? `Integration ${campaign.integration.external_ticket_key}` : "Integration unlinked",
-    campaign.compliance?.external_item_id ? `Compliance ${campaign.compliance.external_item_id}` : "Compliance unlinked"
-  ].join(" • ");
-}
-
 export function PublisherWorkspacePage({ publisher }) {
   const resources = usePortalStore((state) => state.resources);
   const loadResources = usePortalStore((state) => state.loadResources);
@@ -115,7 +108,6 @@ export function PublisherWorkspacePage({ publisher }) {
           <Card title={selectedCampaign.name}>
             <div className="flex flex-wrap items-center gap-3 text-sm text-black/60">
               <StatusPill status={selectedCampaign.status} />
-              <span>{campaignDetail(selectedCampaign)}</span>
             </div>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-black/65">
               Focus this workspace on the next launch blocker. Open Integration or Compliance from the campaign on the left to continue the conversation
@@ -130,7 +122,7 @@ export function PublisherWorkspacePage({ publisher }) {
     if (selection.type === "integration" && selectedCampaign.integration) {
       return (
         <MessagePanel
-          title={`${selectedCampaign.name} • Integration`}
+          title={`${selectedCampaign.name} - Integration`}
           entity={selectedCampaign.integration}
           onSend={(body) =>
             postIntegrationMessage(selectedCampaign.id, selectedCampaign.integration.id, body).catch((nextError) => {
@@ -144,7 +136,7 @@ export function PublisherWorkspacePage({ publisher }) {
     if (selection.type === "compliance" && selectedCampaign.compliance) {
       return (
         <MessagePanel
-          title={`${selectedCampaign.name} • Compliance`}
+          title={`${selectedCampaign.name} - Compliance`}
           entity={selectedCampaign.compliance}
           uploadEnabled
           onSend={(body) =>
@@ -181,7 +173,7 @@ export function PublisherWorkspacePage({ publisher }) {
       {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-4">
-          <Card title="Campaigns" className="sticky top-6">
+          <Card title="Campaigns">
             <div className="space-y-4">
               {campaigns.map((campaign) => {
                 const expanded = expandedCampaignId === campaign.id;
@@ -204,7 +196,7 @@ export function PublisherWorkspacePage({ publisher }) {
                       <div className="space-y-3">
                         <div>
                           <strong className="block text-sm font-semibold text-px-ink">{campaign.name}</strong>
-                          <span className="text-sm text-black/60">{campaignDetail(campaign)}</span>
+                          <span className="text-sm text-black/60">Open Overview, Integration, or Compliance to work through this campaign.</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <StatusPill status={campaign.status} />

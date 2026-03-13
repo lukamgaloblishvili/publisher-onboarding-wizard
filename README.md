@@ -8,17 +8,15 @@ This product is not a replacement for `open.px.com`. It is meant to reduce frict
 
 - `frontend/`: React + Vite SPA with Tailwind CSS and Zustand stores
 - `backend/`: FastAPI API with Postgres persistence, Alembic migrations, and mockable Jira/Monday adapters
-- `docker-compose.yml`: local Postgres service for development
+- `docker-compose.yml`: full local stack for frontend, backend, and Postgres
 
 ## Highlights
 
 - Admin username/password login with secure Argon2 hashing
 - Publisher access via one shared access code per publisher workspace
-- Multiple notification emails stored per publisher for future outbound notifications
-- Tailwind-based frontend styling
-- Zustand-backed session and portal state
-- Campaign message sending and uploads update local state without page-wide refetches
+- Encrypted session cookies and encrypted publisher contact/slack values at rest
 - Mock Jira and Monday adapters with a documented real-mode path
+- Full container setup for frontend, backend, and Postgres
 - Automatic migration run on backend startup and seed bootstrap for demo data
 
 ## Demo access
@@ -26,60 +24,57 @@ This product is not a replacement for `open.px.com`. It is meant to reduce frict
 - Admin: `admin` / `admin123`
 - Publisher access code: `ACME-ACCESS-2026`
 
+## Security notes
+
+- Do not commit live credentials to tracked files.
+- Treat any previously committed Jira or Monday credentials as compromised and rotate them.
+- Use a strong `SECRET_KEY` outside local development.
+- Prefer setting `DATA_ENCRYPTION_KEY` explicitly in deployed environments instead of relying on the derived development fallback.
+
 ## Local setup
 
-### 1. Start Postgres
+### Option 1: full Docker stack
+
+1. Copy `.env.example` to `.env`.
+2. Review the values, especially `BACKEND_SECRET_KEY`, `BACKEND_DATA_ENCRYPTION_KEY`, and any live integration credentials.
+3. Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:8000`
+- postgres: `127.0.0.1:5432`
+
+### Option 2: run apps directly
+
+1. Start Postgres only:
 
 ```bash
 docker compose up -d postgres
 ```
 
-This starts Postgres on `127.0.0.1:5432` with:
-
-- database: `px_onboarding_wizard`
-- username: `px`
-- password: `px_password`
-
-### 2. Backend setup
-
-1. Create and activate a virtual environment.
-2. Install dependencies:
+2. Backend setup:
 
 ```bash
 pip install -r backend/requirements.txt
-```
-
-3. Copy `backend/.env.example` to `backend/.env`.
-4. Run migrations manually if you want an explicit migration step:
-
-```bash
-cd backend
-alembic upgrade head
-```
-
-5. Start the API:
-
-```bash
+copy backend\.env.example backend\.env
 cd backend
 uvicorn app.main:app --reload
 ```
 
-The backend also runs `alembic upgrade head` during startup before seeding data.
-
-### 3. Frontend setup
-
-1. Copy `frontend/.env.example` to `frontend/.env`.
-2. Install dependencies:
+3. Frontend setup:
 
 ```bash
 npm install --prefix frontend
-```
-
-3. Start the dev server:
-
-```bash
+copy frontend\.env.example frontend\.env
 npm run --prefix frontend dev
 ```
+
+The backend runs migrations on startup before seeding demo data.
 
 ## Seed / bootstrap
 
@@ -96,40 +91,87 @@ On first backend startup, `backend/app/db/seed.py` inserts:
 
 ## Environment variables
 
-### Backend
+### Root `.env` for Docker Compose
 
-- `SECRET_KEY`: session signing secret
-- `DATABASE_URL`: Postgres connection string
-- `CORS_ORIGINS`: comma-separated allowed frontend origins
-- `SESSION_COOKIE_SECURE`: `true` or `false`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_PORT`
+- `BACKEND_ENVIRONMENT`
+- `BACKEND_SECRET_KEY`
+- `BACKEND_DATA_ENCRYPTION_KEY`
+- `BACKEND_DATABASE_URL`
+- `BACKEND_CORS_ORIGINS`
+- `BACKEND_SESSION_COOKIE_SECURE`
+- `BACKEND_SESSION_MAX_AGE_SECONDS`
+- `BACKEND_USE_MOCK_INTEGRATIONS`
+- `BACKEND_JIRA_BASE_URL`
+- `BACKEND_JIRA_EMAIL`
+- `BACKEND_JIRA_API_TOKEN`
+- `BACKEND_INTEGRATION_SYNC_INTERVAL_SECONDS`
+- `BACKEND_INTEGRATION_AUTO_SYNC_ENABLED`
+- `BACKEND_MONDAY_API_TOKEN`
+- `BACKEND_MAX_UPLOAD_BYTES`
+- `BACKEND_PORT`
+- `FRONTEND_VITE_API_URL`
+- `FRONTEND_PORT`
+
+For Docker Compose, leave `FRONTEND_VITE_API_URL` empty to let the frontend call the backend on the same host using port `8000`.
+
+### Backend `.env`
+
+- `ENVIRONMENT`
+- `SECRET_KEY`
+- `DATA_ENCRYPTION_KEY`
+- `DATABASE_URL`
+- `CORS_ORIGINS`
+- `SESSION_COOKIE_SECURE`
 - `SESSION_MAX_AGE_SECONDS`
-- `USE_MOCK_INTEGRATIONS`: `true` or `false`
+- `USE_MOCK_INTEGRATIONS`
 - `JIRA_BASE_URL`
 - `JIRA_EMAIL`
 - `JIRA_API_TOKEN`
+- `INTEGRATION_SYNC_INTERVAL_SECONDS`
+- `INTEGRATION_AUTO_SYNC_ENABLED`
 - `MONDAY_API_TOKEN`
 - `MAX_UPLOAD_BYTES`
 
-### Frontend
+### Frontend `.env`
 
-- `VITE_API_URL`: backend base URL
+- `VITE_API_URL`
 
 ## Auth model
 
 ### Admin
 
 - Signs in with username and password
-- Session stored in an httpOnly signed cookie
+- Passwords are Argon2-hashed
+- Session stored in an encrypted httpOnly cookie
 
 ### Publisher
 
 - Signs in with one shared publisher access code
+- Access codes are stored as hashes only
 - There is one login context per publisher, not per individual publisher user
 - Admins can rotate the access code from the publisher detail page
 
+## Sensitive data handling
+
+Current protections:
+
+- Admin passwords are hashed with Argon2
+- Publisher access codes are hashed with Argon2
+- Session cookies are encrypted and authenticated
+- Stored publisher Slack URLs and notification email payloads are encrypted before persistence
+
+Current limits:
+
+- Third-party credentials are expected to come from environment variables, not from the database
+- Uploaded files are stored locally for MVP use and should be moved to object storage for real deployments
+
 ## Database and migrations
 
-- Postgres is the default database for local development
+- Postgres is the default database for local and containerized development
 - Alembic migration config lives in `backend/alembic.ini` and `backend/alembic/`
 - Initial schema migration is `backend/alembic/versions/20260312_0001_initial_postgres_schema.py`
 
@@ -150,7 +192,7 @@ By default, the backend runs in mock mode.
 
 To switch toward live integrations:
 
-1. Set `USE_MOCK_INTEGRATIONS=false` in `backend/.env`
+1. Set `USE_MOCK_INTEGRATIONS=false`
 2. Provide Jira credentials:
    - `JIRA_BASE_URL`
    - `JIRA_EMAIL`
@@ -191,30 +233,29 @@ Main endpoints implemented:
 - `POST /compliance/{id}/upload`
 - `GET /resources/current`
 
-## Deployment notes for Vercel
+## Deployment notes
 
-Simplest deployment shape:
+This repository is now container-friendly rather than tied to one hosting provider.
 
-1. Deploy `frontend/` as a Vercel static project
-2. Deploy `backend/` as a separate Vercel project using `backend/api/index.py`
-3. Set `VITE_API_URL` in the frontend project to the backend deployment URL
-4. Use a managed Postgres database for the backend
-5. Set backend environment variables in Vercel
+- `backend/Dockerfile` builds the FastAPI API image
+- `frontend/Dockerfile` builds and serves the static frontend with Nginx
+- `docker-compose.yml` runs the full stack locally
 
-Notes:
+For deployment on a container platform:
 
-- Do not use local Docker Compose Postgres in production
-- Local uploads remain suitable for demo environments only; switch to object storage for real deployment
-- Set a strong `SECRET_KEY`
-- Use secure cookies in production by setting `SESSION_COOKIE_SECURE=true`
+1. Build and run `backend/` and `frontend/` as separate services or containers
+2. Use a managed Postgres database
+3. Provide all secrets through the platform secret manager
+4. Set a strong `SECRET_KEY`
+5. Set `DATA_ENCRYPTION_KEY`
+6. Set `SESSION_COOKIE_SECURE=true`
 
 ## Verification
 
-Recommended local verification steps after dependency install:
+Recommended local verification steps:
 
 ```bash
-docker compose up -d postgres
-cd backend && alembic upgrade head
-uvicorn app.main:app --reload
 npm run --prefix frontend build
+pip install -r backend/requirements.txt
+docker compose config
 ```
