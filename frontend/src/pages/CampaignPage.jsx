@@ -24,8 +24,8 @@ export function CampaignPage() {
   const uploadComplianceFile = usePortalStore((state) => state.uploadComplianceFile);
   const [campaignForm, setCampaignForm] = useState({ name: "", status: "in_progress" });
   const [milestonesDraft, setMilestonesDraft] = useState("");
-  const [integrationForm, setIntegrationForm] = useState({ external_ticket_key: "", external_ticket_url: "" });
-  const [complianceForm, setComplianceForm] = useState({ external_item_id: "", external_ticket_url: "" });
+  const [integrationForm, setIntegrationForm] = useState({ external_ticket_url: "" });
+  const [complianceForm, setComplianceForm] = useState({ external_ticket_url: "" });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -39,11 +39,9 @@ export function CampaignPage() {
     setCampaignForm({ name: campaign.name, status: campaign.status });
     setMilestonesDraft((campaign.checklist_items || []).map((item) => item.label).join("\n"));
     setIntegrationForm({
-      external_ticket_key: campaign.integration?.external_ticket_key || "",
       external_ticket_url: campaign.integration?.external_ticket_url || ""
     });
     setComplianceForm({
-      external_item_id: campaign.compliance?.external_item_id || "",
       external_ticket_url: campaign.compliance?.external_ticket_url || ""
     });
   }, [campaign]);
@@ -166,8 +164,13 @@ export function CampaignPage() {
                   });
                 }}
               >
-                <input className="app-input" placeholder="Integration ticket key" value={integrationForm.external_ticket_key} onChange={(event) => setIntegrationForm((current) => ({ ...current, external_ticket_key: event.target.value }))} />
-                <input className="app-input" placeholder="Integration ticket URL" value={integrationForm.external_ticket_url} onChange={(event) => setIntegrationForm((current) => ({ ...current, external_ticket_url: event.target.value }))} />
+                <input
+                  className="app-input"
+                  placeholder="Jira ticket URL"
+                  value={integrationForm.external_ticket_url}
+                  onChange={(event) => setIntegrationForm({ external_ticket_url: event.target.value })}
+                />
+                <p className="app-helper">Paste the full Jira issue URL. The ticket key will be derived automatically.</p>
                 <button className="app-button-secondary">Save integration link</button>
               </form>
               <form
@@ -179,8 +182,13 @@ export function CampaignPage() {
                   });
                 }}
               >
-                <input className="app-input" placeholder="Compliance item ID" value={complianceForm.external_item_id} onChange={(event) => setComplianceForm((current) => ({ ...current, external_item_id: event.target.value }))} />
-                <input className="app-input" placeholder="Compliance item URL" value={complianceForm.external_ticket_url} onChange={(event) => setComplianceForm((current) => ({ ...current, external_ticket_url: event.target.value }))} />
+                <input
+                  className="app-input"
+                  placeholder="Monday item URL"
+                  value={complianceForm.external_ticket_url}
+                  onChange={(event) => setComplianceForm({ external_ticket_url: event.target.value })}
+                />
+                <p className="app-helper">Paste the full Monday item URL. The item ID will be derived automatically.</p>
                 <button className="app-button-secondary">Save compliance link</button>
               </form>
             </div>

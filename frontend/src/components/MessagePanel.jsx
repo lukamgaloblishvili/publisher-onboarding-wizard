@@ -75,16 +75,14 @@ export function MessagePanel({ title, entity, onSend, onUpload, uploadEnabled = 
         </div>
       }
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-black/60">
-        {isAdmin ? (
+      {isAdmin ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-black/60">
           <a className="font-medium text-px-deep underline underline-offset-2" href={entity.external_ticket_url} target="_blank" rel="noreferrer">
             {entity.external_ticket_key || entity.external_item_id || "Open external item"}
           </a>
-        ) : (
-          <span>Linked work item</span>
-        )}
-        <span>{isAdmin ? `External status: ${entity.external_status || "Unknown"}` : `Status: ${entity.portal_status || "Unknown"}`}</span>
-      </div>
+          <span>{`External status: ${entity.external_status || "Unknown"}`}</span>
+        </div>
+      ) : null}
       <div className="mb-5 rounded-2xl bg-px-mist/80 p-4 text-sm leading-7 text-black/80">
         {entity.frozen_description_html ? (
           <div dangerouslySetInnerHTML={{ __html: entity.frozen_description_html }} />

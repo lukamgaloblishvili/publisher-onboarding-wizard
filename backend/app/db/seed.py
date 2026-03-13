@@ -3,7 +3,7 @@ import json
 from sqlmodel import Session, select
 
 from app.core.defaults import DEFAULT_RESOURCES, build_checklist
-from app.core.security import hash_password
+from app.core.security import encrypt_text, hash_password
 from app.models.models import Campaign, CampaignCompliance, CampaignIntegration, Message, Publisher, User
 
 
@@ -17,8 +17,8 @@ def seed_data(session: Session) -> None:
         publisher = Publisher(
             name="Acme Publishing",
             slug="acme-publishing",
-            slack_channel_embed_url="https://it4px.slack.com/archives/C0ADVQH943X",
-            notification_emails_json=json.dumps(["ops@acmepublishing.example", "finance@acmepublishing.example"]),
+            slack_channel_embed_url=encrypt_text("https://it4px.slack.com/archives/C0ADVQH943X"),
+            notification_emails_json=encrypt_text(json.dumps(["ops@acmepublishing.example", "finance@acmepublishing.example"])),
             access_code_hash=hash_password(SEEDED_PUBLISHER_ACCESS_CODE),
             resources_content_markdown=default_publisher_resources,
         )
@@ -30,8 +30,17 @@ def seed_data(session: Session) -> None:
         if not publisher.resources_content_markdown or "https://api.px.com/" not in publisher.resources_content_markdown:
             publisher.resources_content_markdown = default_publisher_resources
             updated = True
+        if publisher.slack_channel_embed_url and not publisher.slack_channel_embed_url.startswith("enc::"):
+            publisher.slack_channel_embed_url = encrypt_text(publisher.slack_channel_embed_url)
+            updated = True
         if not publisher.notification_emails_json:
-            publisher.notification_emails_json = json.dumps(["ops@acmepublishing.example", "finance@acmepublishing.example"])
+            publisher.notification_emails_json = encrypt_text(json.dumps(["ops@acmepublishing.example", "finance@acmepublishing.example"]))
+            updated = True
+        elif not publisher.notification_emails_json.startswith("enc::"):
+            publisher.notification_emails_json = encrypt_text(publisher.notification_emails_json)
+            updated = True
+        if not publisher.slack_channel_embed_url:
+            publisher.slack_channel_embed_url = encrypt_text("https://it4px.slack.com/archives/C0ADVQH943X")
             updated = True
         if not publisher.access_code_hash:
             publisher.access_code_hash = hash_password(SEEDED_PUBLISHER_ACCESS_CODE)

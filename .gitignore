@@ -5,7 +5,11 @@ dist/
 .venv/
 __pycache__/
 *.pyc
+.env
+*.log
+*.err
 backend/px_wizard.db
+backend/runtime.db
 backend/app/uploads/*
 !backend/app/uploads/.gitkeep
 frontend/.env

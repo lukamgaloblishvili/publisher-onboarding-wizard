@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.defaults import DEFAULT_RESOURCES, build_checklist
 from app.core.security import (
     create_session_token,
+    encrypt_text,
     generate_publisher_access_code,
     hash_password,
     verify_password,
@@ -217,8 +218,8 @@ def create_publisher(payload: PublisherCreate, session: Session = Depends(get_se
     publisher = Publisher(
         name=payload.name,
         slug=payload.slug,
-        slack_channel_embed_url=(payload.slack_channel_embed_url or "").strip() or None,
-        notification_emails_json=json.dumps(notification_emails),
+        slack_channel_embed_url=encrypt_text((payload.slack_channel_embed_url or "").strip() or None),
+        notification_emails_json=encrypt_text(json.dumps(notification_emails)),
         resources_content_markdown=resources_content,
         updated_at=now_utc(),
     )
@@ -245,9 +246,12 @@ def update_publisher(publisher_id: int, payload: PublisherUpdate, session: Sessi
     update_data = payload.model_dump(exclude_none=True)
     notification_emails = update_data.pop("notification_emails", None)
     for key, value in update_data.items():
-        setattr(publisher, key, value.strip() if isinstance(value, str) else value)
+        next_value = value.strip() if isinstance(value, str) else value
+        if key == "slack_channel_embed_url":
+            next_value = encrypt_text(next_value or None)
+        setattr(publisher, key, next_value)
     if notification_emails is not None:
-        publisher.notification_emails_json = json.dumps(sanitize_notification_emails(notification_emails))
+        publisher.notification_emails_json = encrypt_text(json.dumps(sanitize_notification_emails(notification_emails)))
     publisher.updated_at = now_utc()
     session.add(publisher)
     session.commit()
@@ -353,8 +357,10 @@ def link_integration(campaign_id: int, payload: IntegrationLinkRequest, session:
     integration = session.exec(select(CampaignIntegration).where(CampaignIntegration.campaign_id == campaign_id)).first()
     if not integration:
         integration = CampaignIntegration(campaign_id=campaign_id)
-    next_key = payload.external_ticket_key.strip()
-    next_url = (payload.external_ticket_url or "").strip()
+    try:
+        next_key, next_url = jira.parse_ticket_reference(payload.external_ticket_key, payload.external_ticket_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     ensure_unique_integration_ticket(session, next_key, integration.id)
     if integration.id is not None:
         reset_integration_snapshot(session, integration)
