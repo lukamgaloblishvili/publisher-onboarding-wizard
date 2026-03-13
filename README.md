@@ -140,6 +140,8 @@ For Docker Compose, leave `FRONTEND_VITE_API_URL` empty to let the frontend call
 
 - `VITE_API_URL`
 
+For container-based hosting, the frontend can now also read `VITE_API_URL` at runtime from the container environment instead of requiring a rebuild.
+
 ## Auth model
 
 ### Admin
@@ -249,6 +251,44 @@ For deployment on a container platform:
 4. Set a strong `SECRET_KEY`
 5. Set `DATA_ENCRYPTION_KEY`
 6. Set `SESSION_COOKIE_SECURE=true`
+
+## Railway notes
+
+Recommended Railway shape:
+
+1. Create a Postgres service in Railway
+2. Create a backend service from the `backend/` directory using [backend/Dockerfile](c:/Users/Luka/OneDrive%20-%20PX.com/Desktop/publisher-onboarding-wizard/backend/Dockerfile)
+3. Create a frontend service from the `frontend/` directory using [frontend/Dockerfile](c:/Users/Luka/OneDrive%20-%20PX.com/Desktop/publisher-onboarding-wizard/frontend/Dockerfile)
+4. Point the frontend `VITE_API_URL` environment variable at the backend public URL
+5. Point the backend `DATABASE_URL` at the Railway Postgres connection string
+
+Backend variables for Railway:
+
+- `ENVIRONMENT=production`
+- `SECRET_KEY=<strong-random-secret>`
+- `DATA_ENCRYPTION_KEY=<strong-random-secret>`
+- `DATABASE_URL=<railway-postgres-url>`
+- `CORS_ORIGINS=<your-frontend-railway-url>`
+- `SESSION_COOKIE_SECURE=true`
+- `USE_MOCK_INTEGRATIONS=false` if you want live Jira or Monday behavior
+- `JIRA_BASE_URL`
+- `JIRA_EMAIL`
+- `JIRA_API_TOKEN`
+- `MONDAY_API_TOKEN`
+
+Frontend variables for Railway:
+
+- `VITE_API_URL=<your-backend-railway-url>`
+
+Railway-specific behavior now supported in this repo:
+
+- backend binds to Railway's dynamic `PORT`
+- frontend Nginx binds to Railway's dynamic `PORT`
+- frontend reads `VITE_API_URL` from a runtime-generated config file, so changing the backend URL does not require rebuilding the frontend image
+
+Known production caveat:
+
+- uploads are still stored on the local container filesystem in [storage.py](c:/Users/Luka/OneDrive%20-%20PX.com/Desktop/publisher-onboarding-wizard/backend/app/services/storage.py), which is suitable for demo use but not durable production storage
 
 ## Verification
 
