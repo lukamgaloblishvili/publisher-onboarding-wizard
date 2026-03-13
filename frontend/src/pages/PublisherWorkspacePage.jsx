@@ -36,12 +36,8 @@ export function PublisherWorkspacePage({ publisher }) {
   const uploadComplianceFile = usePortalStore((state) => state.uploadComplianceFile);
   const loadCampaign = usePortalStore((state) => state.loadCampaign);
   const liveCampaignsById = usePortalStore((state) => state.campaignsById);
-  const [expandedCampaignId, setExpandedCampaignId] = useState(publisher.campaigns[0]?.id ?? null);
-  const [selection, setSelection] = useState(
-    publisher.campaigns[0]
-      ? { type: "campaign_overview", campaignId: publisher.campaigns[0].id }
-      : { type: "resources", campaignId: null }
-  );
+  const [expandedCampaignId, setExpandedCampaignId] = useState(null);
+  const [selection, setSelection] = useState({ type: null, campaignId: null });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -72,6 +68,22 @@ export function PublisherWorkspacePage({ publisher }) {
   }
 
   function renderDetailPanel() {
+    if (!selection.type) {
+      return (
+        <Card className="h-full">
+          <div className="flex min-h-[28rem] items-center justify-center rounded-[1.75rem] border border-dashed border-black/10 bg-px-mist/40 px-8 text-center">
+            <div className="max-w-md space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-px-deep">Workspace Detail</p>
+              <h2 className="text-2xl font-semibold text-px-ink">Select an item from the left</h2>
+              <p className="text-sm leading-7 text-black/60">
+                Choose a campaign section, open Resources, or jump to Slack from the left rail and the related details will appear here.
+              </p>
+            </div>
+          </div>
+        </Card>
+      );
+    }
+
     if (selection.type === "resources") {
       return (
         <Card title="Resources" className="h-full">
@@ -158,32 +170,13 @@ export function PublisherWorkspacePage({ publisher }) {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <div className="space-y-3">
-          <span className="text-xs uppercase tracking-[0.2em] text-px-deep">Publisher Workspace</span>
-          <h1 className="text-4xl font-semibold text-px-ink">{publisher.name}</h1>
-          <p className="max-w-4xl text-base leading-7 text-black/65">
-            This workspace keeps campaign onboarding easy to follow. Expand a campaign on the left, choose Integration, Compliance, or Overview, and work
-            through launch items without changing pages.
-          </p>
-        </div>
-        <Card title="Workspace Focus">
-          <div className="space-y-4">
-            <p className="text-sm leading-7 text-black/70">
-              This portal centralizes onboarding and go-live work across Integration, Compliance, resources, and Slack. It does not replace open.px.com.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button className={sectionButton(selection.type === "resources")} onClick={() => setSelection({ type: "resources", campaignId: null })}>
-                Resources
-              </button>
-              {publisher.slack_channel_embed_url ? (
-                <a className="app-button-secondary !py-2" href={publisher.slack_channel_embed_url} target="_blank" rel="noreferrer">
-                  Open Slack Channel
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </Card>
+      <section className="space-y-3">
+        <span className="text-xs uppercase tracking-[0.2em] text-px-deep">Publisher Workspace</span>
+        <h1 className="text-4xl font-semibold text-px-ink">{publisher.name}</h1>
+        <p className="max-w-4xl text-base leading-7 text-black/65">
+          This workspace keeps campaign onboarding easy to follow. Expand a campaign on the left, choose Integration, Compliance, or Overview, and work
+          through launch items without changing pages.
+        </p>
       </section>
       {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -199,8 +192,11 @@ export function PublisherWorkspacePage({ publisher }) {
                       type="button"
                       className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left"
                       onClick={() => {
-                        setExpandedCampaignId(expanded ? null : campaign.id);
-                        if (!expanded) {
+                        const nextExpandedCampaignId = expanded ? null : campaign.id;
+                        setExpandedCampaignId(nextExpandedCampaignId);
+                        if (expanded && selection.campaignId === campaign.id) {
+                          setSelection({ type: null, campaignId: null });
+                        } else if (!expanded) {
                           setSelection({ type: "campaign_overview", campaignId: campaign.id });
                         }
                       }}
@@ -235,6 +231,23 @@ export function PublisherWorkspacePage({ publisher }) {
                   </div>
                 );
               })}
+            </div>
+          </Card>
+          <Card title="Workspace Tools">
+            <div className="space-y-4">
+              <p className="text-sm leading-7 text-black/70">
+                Shared resources and Slack stay available here while you work through campaign tasks.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button className={sectionButton(selection.type === "resources")} onClick={() => setSelection({ type: "resources", campaignId: null })}>
+                  Resources
+                </button>
+                {publisher.slack_channel_embed_url ? (
+                  <a className="app-button-secondary !py-2" href={publisher.slack_channel_embed_url} target="_blank" rel="noreferrer">
+                    Open Slack Channel
+                  </a>
+                ) : null}
+              </div>
             </div>
           </Card>
         </div>
