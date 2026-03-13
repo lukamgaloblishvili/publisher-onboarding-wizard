@@ -18,6 +18,8 @@ export function AdminPublisherPage() {
   const deleteCampaign = usePortalStore((state) => state.deleteCampaign);
   const [publisherForm, setPublisherForm] = useState(null);
   const [campaignForm, setCampaignForm] = useState({ name: "", status: "in_progress" });
+  const [emailDraft, setEmailDraft] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function AdminPublisherPage() {
           name: publisher.name,
           slug: publisher.slug,
           slack_channel_embed_url: publisher.slack_channel_embed_url || "",
-          notification_emails: publisher.notification_emails.join("\n"),
+          notification_emails: publisher.notification_emails,
           resources_content_markdown: publisher.resources_content_markdown || ""
         })
       )
@@ -43,6 +45,40 @@ export function AdminPublisherPage() {
   }
 
   const visibleAccessCode = latestAccessCode || location.state?.accessCode || "";
+
+  function addNotificationEmail() {
+    const nextEmail = emailDraft.trim().toLowerCase();
+    if (!nextEmail || publisherForm.notification_emails.includes(nextEmail)) {
+      setEmailDraft("");
+      return;
+    }
+    setPublisherForm((current) => ({
+      ...current,
+      notification_emails: [...current.notification_emails, nextEmail]
+    }));
+    setEmailDraft("");
+  }
+
+  function removeNotificationEmail(emailToRemove) {
+    setPublisherForm((current) => ({
+      ...current,
+      notification_emails: current.notification_emails.filter((email) => email !== emailToRemove)
+    }));
+  }
+
+  async function copyAccessCode() {
+    if (!visibleAccessCode) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(visibleAccessCode);
+      setCopyFeedback("Access code copied");
+      window.setTimeout(() => setCopyFeedback(""), 2000);
+    } catch {
+      setCopyFeedback("Copy failed");
+      window.setTimeout(() => setCopyFeedback(""), 2000);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -60,18 +96,12 @@ export function AdminPublisherPage() {
             onSubmit={async (event) => {
               event.preventDefault();
               try {
-                const publisher = await updatePublisher(adminPublisher.id, {
-                  ...publisherForm,
-                  notification_emails: publisherForm.notification_emails
-                    .split("\n")
-                    .map((value) => value.trim())
-                    .filter(Boolean)
-                });
+                const publisher = await updatePublisher(adminPublisher.id, publisherForm);
                 setPublisherForm({
                   name: publisher.name,
                   slug: publisher.slug,
                   slack_channel_embed_url: publisher.slack_channel_embed_url || "",
-                  notification_emails: publisher.notification_emails.join("\n"),
+                  notification_emails: publisher.notification_emails,
                   resources_content_markdown: publisher.resources_content_markdown || ""
                 });
               } catch (nextError) {
@@ -97,15 +127,46 @@ export function AdminPublisherPage() {
               />
             </label>
             <p className="app-helper">Use the exact Slack channel URL copied from Slack so publishers open the dedicated onboarding channel directly.</p>
-            <label className="app-label">
-              Notification emails
-              <textarea
-                className="app-input min-h-28"
-                rows="4"
-                value={publisherForm.notification_emails}
-                onChange={(event) => setPublisherForm((current) => ({ ...current, notification_emails: event.target.value }))}
-              />
-            </label>
+            <div className="space-y-3">
+              <label className="app-label">Notification emails</label>
+              <div className="rounded-[1.4rem] border border-black/10 bg-white/80 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    className="app-input"
+                    placeholder="name@publisher.com"
+                    value={emailDraft}
+                    onChange={(event) => setEmailDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addNotificationEmail();
+                      }
+                    }}
+                  />
+                  <button type="button" className="app-button-secondary sm:self-start" onClick={addNotificationEmail}>
+                    Add email
+                  </button>
+                </div>
+                <p className="app-helper mt-3">Recipients are active by default today. Later this can expand into enable or disable notification controls per contact.</p>
+                {publisherForm.notification_emails.length ? (
+                  <div className="mt-4 space-y-3">
+                    {publisherForm.notification_emails.map((email) => (
+                      <div key={email} className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-px-mist/40 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <strong className="block text-sm font-medium text-px-ink">{email}</strong>
+                          <span className="app-pill bg-px-green/10 text-px-deep">Active</span>
+                        </div>
+                        <button type="button" className="app-button-link" onClick={() => removeNotificationEmail(email)}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl bg-px-mist/60 px-4 py-4 text-sm text-black/60">No notification recipients configured yet.</div>
+                )}
+              </div>
+            </div>
             <label className="app-label">
               Resources markdown
               <textarea
@@ -141,8 +202,18 @@ export function AdminPublisherPage() {
                 <div className="mt-4 rounded-2xl bg-white px-4 py-4">
                   <span className="block text-xs uppercase tracking-[0.2em] text-black/45">Current access code</span>
                   <strong className="mt-2 block text-lg font-semibold text-px-ink">{visibleAccessCode}</strong>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button type="button" className="app-button-secondary" onClick={copyAccessCode}>
+                      Copy access code
+                    </button>
+                    {copyFeedback ? <span className="text-sm text-black/60">{copyFeedback}</span> : null}
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm text-black/60">
+                  The existing access code is stored securely and cannot be viewed again. Generate a new one if you need to share it.
+                </div>
+              )}
               <button
                 className="app-button-secondary mt-4"
                 onClick={async () => {
@@ -204,7 +275,7 @@ export function AdminPublisherPage() {
                     {campaign.name}
                   </Link>
                   <p className="mt-1 text-sm text-black/60">
-                    Integration {campaign.integration?.external_ticket_key || "unlinked"} • Compliance {campaign.compliance?.external_item_id || "unlinked"}
+                    Integration {campaign.integration?.external_ticket_key || "unlinked"} - Compliance {campaign.compliance?.external_item_id || "unlinked"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

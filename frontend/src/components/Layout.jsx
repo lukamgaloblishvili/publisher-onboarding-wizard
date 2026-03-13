@@ -85,9 +85,6 @@ export function AppShell({ children }) {
               <NavLink to="/admin" className={navClassName}>
                 Publishers
               </NavLink>
-              <NavLink to="/resources" className={navClassName}>
-                Resources
-              </NavLink>
             </>
           ) : (
             <>

@@ -52,7 +52,7 @@ function ProtectedLayout() {
         <Route path="/admin" element={user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" replace />} />
         <Route path="/admin/publishers/:publisherId" element={user.role === "admin" ? <AdminPublisherPage /> : <Navigate to="/" replace />} />
         <Route path="/campaigns/:campaignId" element={user.role === "admin" ? <CampaignPage /> : <Navigate to="/" replace />} />
-        <Route path="/resources" element={user.role === "admin" ? <ResourcesPage /> : <Navigate to="/" replace />} />
+        <Route path="/resources" element={user.role === "publisher" ? <ResourcesPage /> : <Navigate to="/admin" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
